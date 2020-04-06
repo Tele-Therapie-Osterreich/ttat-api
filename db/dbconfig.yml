@@ -1,0 +1,11 @@
+development:
+    dialect: postgres
+    datasource: dbname=ttat sslmode=disable
+    dir: migrations
+    table: migrations
+
+production:
+    dialect: postgres
+    datasource: dbname=ttat
+    dir: migrations
+    table: migrations
