@@ -1,4 +1,4 @@
-package mailer
+package mail
 
 import (
 	"errors"
@@ -10,5 +10,5 @@ var ErrUnknownEmailTemplate = errors.New("email template unknown")
 
 // Mailer represents machinery for sending template-based emails.
 type Mailer interface {
-	Send(template string, language string, email string, data map[string]string) error
+	Send(template string, language string, email string, data map[string]string)
 }

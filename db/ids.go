@@ -1,4 +1,4 @@
-package chassis
+package db
 
 import (
 	"math/rand"

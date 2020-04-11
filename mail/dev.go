@@ -1,4 +1,4 @@
-package mailer
+package mail
 
 import (
 	"fmt"
@@ -14,12 +14,11 @@ func NewDevMailer() *DevMailer {
 
 // Send sends an email.
 func (m *DevMailer) Send(template string, language string,
-	email string, data map[string]string) error {
+	email string, data map[string]string) {
 	fmt.Println("====> EMAIL SEND ->", email)
 	fmt.Println("  template =", template, "   language =", language)
 	for k, v := range data {
 		fmt.Println(" ", k, "=", v)
 	}
 	fmt.Println("<==== EMAIL SEND")
-	return nil
 }

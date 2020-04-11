@@ -1,4 +1,4 @@
-package chassis
+package server
 
 import (
 	"encoding/json"

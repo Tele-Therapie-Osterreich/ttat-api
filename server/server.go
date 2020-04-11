@@ -2,86 +2,91 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
+	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/Tele-Therapie-Osterreich/ttat-api/chassis"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
-	"github.com/Tele-Therapie-Osterreich/ttat-api/mailer"
+	"github.com/Tele-Therapie-Osterreich/ttat-api/mail"
 )
 
-// Server is the server structure for the user service.
+// Server is the server structure for the TTAT API service.
 type Server struct {
-	chassis.Server
+	srv           *http.Server
 	db            db.DB
 	secureSession bool
-	mailer        mailer.Mailer
-	mailCh        chan mailer.MailEvent
+	mailer        mail.Mailer
 }
 
-// Config contains the configuration information needed to start
-// the user service.
-type Config struct {
-	DevMode            bool   `env:"DEV_MODE,default=false"`
-	DBURL              string `env:"DATABASE_URL,required"`
-	Port               int    `env:"PORT,default=8080"`
-	CSRFSecret         string `env:"CSRF_SECRET"`
-	CORSOrigins        string `env:"CORS_ORIGINS"`
-	MJPublicKey        string `env:"MAILJET_API_KEY_PUBLIC"`
-	MJPrivateKey       string `env:"MAILJET_API_KEY_PRIVATE"`
-	SimultaneousEmails int    `env:"SIMULTANEOUS_EMAILS,default=10"`
-}
-
-// NewServer creates the server structure for the user service.
-func NewServer(cfg *Config) *Server {
+// NewServer creates the server structure for the TTAT API service.
+func NewServer(cfg *Config, db db.DB, mailer mail.Mailer) *Server {
 	// Fixed CORS origin list from environment.
 	corsOrigins := []string{}
 	if len(cfg.CORSOrigins) > 0 {
 		corsOrigins = strings.Split(cfg.CORSOrigins, ",")
 	}
 
-	// Common server initialisation.
+	// Randomise ID generation.
+	rand.Seed(int64(time.Now().Nanosecond()))
+
+	// Basic server initialisation.
 	s := &Server{
 		secureSession: !cfg.DevMode,
+		db:            db,
+		mailer:        mailer,
 	}
-	s.Init(cfg.Port, s.routes(cfg.DevMode, cfg.CSRFSecret, corsOrigins))
-
-	// Connect to database.
-	timeout, _ := context.WithTimeout(context.Background(), time.Second*10)
-	var err error
-	s.db, err = db.NewPGClient(timeout, cfg.DBURL)
-	if err != nil {
-		log.Fatal().Err(err).Msg("couldn't connect to user database")
+	s.srv = &http.Server{
+		Handler: s.routes(cfg.DevMode, cfg.CSRFSecret, corsOrigins),
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
 	}
-
-	// Initialise mailer.
-	if cfg.MJPublicKey == "" || cfg.MJPrivateKey == "" ||
-		cfg.MJPublicKey == "dev" || cfg.MJPrivateKey == "dev" {
-		log.Info().Msg("using development mailer")
-		s.mailer = mailer.NewDevMailer()
-	} else {
-		s.mailer, err = mailer.NewMailjetMailer(cfg.MJPublicKey, cfg.MJPrivateKey)
-		if err != nil {
-			log.Fatal().Err(err).Msg("couldn't connect to Mailjet")
-		}
-	}
-
-	// Set up mail sender.
-	s.mailCh = make(chan mailer.MailEvent, cfg.SimultaneousEmails)
-	go mailer.MailSender(s.mailCh, s.mailer)
 
 	return s
 }
 
-// SendEmail is a simple interface for sending emails.
-func (s *Server) SendEmail(template string, email string, language string,
-	data map[string]string) {
-	s.mailCh <- mailer.MailEvent{
-		Template: template,
-		Email:    email,
-		Language: language,
-		Data:     data,
+// Serve runs a server event loop.
+func (s *Server) Serve() {
+	errChan := make(chan error, 0)
+	go func() {
+		log.Info().
+			Str("address", s.srv.Addr).
+			Msg("server started")
+		err := s.srv.ListenAndServe()
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	signalCh := make(chan os.Signal, 0)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+
+	var err error
+
+	select {
+	case <-signalCh:
+	case err = <-errChan:
+	}
+
+	s.shutdown()
+
+	if err == nil {
+		log.Info().Msg("server shutting down")
+	} else {
+		log.Fatal().Err(err).Msg("server failed")
+	}
+}
+
+// Shut down server.
+func (s *Server) shutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := s.srv.Shutdown(ctx); err != nil {
+		log.Error().Err(err)
 	}
 }

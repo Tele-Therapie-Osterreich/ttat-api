@@ -1,7 +1,8 @@
-package mailer
+package mail
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"sync"
@@ -16,9 +17,10 @@ var fromRE = regexp.MustCompile(`(.+) <([^>]+)>`)
 
 // MailjetMailer sends email using Mailjet.
 type MailjetMailer struct {
-	mj    *mailjet.Client
-	mu    sync.Mutex
-	tmpls map[string]templateInfo
+	mailCh chan event
+	mj     *mailjet.Client
+	mu     sync.Mutex
+	tmpls  map[string]templateInfo
 }
 
 // Fields we need to extract from the template definition to use the
@@ -36,7 +38,10 @@ type templateInfo struct {
 
 // NewMailjetMailer creates a new mailer for Mailjet based on Mailjet
 // API key credentials.
-func NewMailjetMailer(pubkey, privkey string) (*MailjetMailer, error) {
+func NewMailjetMailer(pubkey, privkey string, simultaneousEmails int) (*MailjetMailer, error) {
+	// Set up mail sender.
+	mailCh := make(chan event, simultaneousEmails)
+
 	mailer := MailjetMailer{}
 	log.Info().Msg("connecting to Mailjet")
 	mailer.mj = mailjet.NewMailjetClient(pubkey, privkey)
@@ -45,7 +50,44 @@ func NewMailjetMailer(pubkey, privkey string) (*MailjetMailer, error) {
 		return nil, err
 	}
 	go mailer.templateUpdater()
+	go mailer.sender(mailCh)
 	return &mailer, nil
+}
+
+// A structure containing information about an email to be sent.
+type event struct {
+	Template string
+	Email    string
+	Language string
+	Data     map[string]string
+}
+
+// Main email sender goroutine: runs off of multiplexed message
+// channel.
+func (m *MailjetMailer) sender(mailCh chan event) {
+	// TODO: HANDLE MESSAGES IN PARALLEL WITH RATE LIMITING.
+	for {
+		ev := <-mailCh
+
+		language := ev.Language
+		if language == "" {
+			language = "en"
+		}
+		err := m.doSend(ev.Template, language, ev.Email, ev.Data)
+		if err != nil {
+			log.Error().Err(err).
+				Str("template", ev.Template).
+				Str("email", ev.Email).
+				Str("data", fmt.Sprintf("%v", ev.Data)).
+				Msg("mailer couldn't send email")
+			continue
+		}
+		log.Info().
+			Str("template", ev.Template).
+			Str("email", ev.Email).
+			Str("data", fmt.Sprintf("%v", ev.Data)).
+			Msg("email sent")
+	}
 }
 
 // loadTemplates loads all our template from Mailjet.
@@ -141,8 +183,19 @@ func (m *MailjetMailer) templateUpdater() {
 	}
 }
 
+// Send queues an email for sending.
+func (m *MailjetMailer) Send(template string, email string, language string,
+	data map[string]string) {
+	m.mailCh <- event{
+		Template: template,
+		Email:    email,
+		Language: language,
+		Data:     data,
+	}
+}
+
 // Send sends an email using a Mailjet template.
-func (m *MailjetMailer) Send(template string, language string,
+func (m *MailjetMailer) doSend(template string, language string,
 	email string, data map[string]string) error {
 	// TODO: MULTI-LINGUAL TEMPLATES
 

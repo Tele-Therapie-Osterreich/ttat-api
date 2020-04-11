@@ -2,8 +2,6 @@ package server
 
 import (
 	"github.com/go-chi/chi"
-
-	"github.com/Tele-Therapie-Osterreich/ttat-api/chassis"
 )
 
 func (s *Server) routes(devMode bool, csrfSecret string, corsOrigins []string) chi.Router {
@@ -13,32 +11,34 @@ func (s *Server) routes(devMode bool, csrfSecret string, corsOrigins []string) c
 	s.addMiddleware(r, devMode, csrfSecret, corsOrigins)
 
 	// Service health checks.
-	r.Get("/", chassis.Health)
+	r.Get("/", Health)
 
 	// These routes need to be outside of the following block to exempt
 	// them from CSRF protection since they're used before a session is
 	// established.
-	r.Post("/auth/request-login-email", chassis.SimpleHandler(s.requestLoginEmail))
-	r.Post("/auth/login", chassis.SimpleHandler(s.login))
+	r.Post("/auth/request-login-email", SimpleHandler(s.RequestLoginEmail))
+	r.Post("/auth/login", SimpleHandler(s.Login))
 
-	r.Get("/image/{id_and_extension}", chassis.SimpleHandler(s.imageDetail))
+	// r.Get("/image/{id_and_extension}", SimpleHandler(s.imageDetail))
 
-	r.Group(func(r chi.Router) {
-		r.Use(CredentialCtx(s))
+	// r.Get("/user/{id:[0-9]+}", SimpleHandler(s.userDetail))
 
-		// Authentication.
-		r.Post("/auth/logout", chassis.SimpleHandler(s.logout))
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(CredentialCtx(s))
 
-		// Routes for authenticated user.
-		r.Route("/me", s.userRoutes)
-	})
+	// 	// Authentication.
+	// 	r.Post("/auth/logout", SimpleHandler(s.logout))
+
+	// 	// Routes for authenticated user.
+	// 	r.Route("/me", s.userRoutes)
+	// })
 
 	return r
 }
 
-// Routes for viewing and manipulating user data.
-func (s *Server) userRoutes(r chi.Router) {
-	r.Get("/", chassis.SimpleHandler(s.userDetail))
-	r.Patch("/", chassis.SimpleHandler(s.userUpdate))
-	r.Delete("/", chassis.SimpleHandler(s.userDelete))
-}
+// // Routes for viewing and manipulating user data.
+// func (s *Server) userRoutes(r chi.Router) {
+// 	r.Get("/", SimpleHandler(s.userDetail))
+// 	r.Patch("/", SimpleHandler(s.userUpdate))
+// 	r.Delete("/", SimpleHandler(s.userDelete))
+// }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/Tele-Therapie-Osterreich/ttat-api/chassis"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 
 	// Import Postgres DB driver.
@@ -152,7 +151,7 @@ func (pg *PGClient) CreateSession(userID int) (string, error) {
 	}
 
 	// Create new session.
-	id := chassis.NewID(16)
+	id := NewID(16)
 
 	_, err = tx.Exec(`INSERT INTO sessions VALUES ($1, $2)`, id, userID)
 	if err != nil {
@@ -205,6 +204,6 @@ const (
 
 // RandToken generates a random string of digits to use as a login token.
 func RandToken() string {
-	return chassis.RandString(dChars, dCharIdxBits, dCharIdxMask, dCharIdxMax,
+	return RandString(dChars, dCharIdxBits, dCharIdxMask, dCharIdxMax,
 		tokenLen)
 }

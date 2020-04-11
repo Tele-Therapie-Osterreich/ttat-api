@@ -11,84 +11,90 @@
 -- TO ITS USERS. IN THIS CONTEXT, THAT MEANS STORING NO HISTORICAL
 -- INFORMATION AT ALL.
 
--- Top-level therapist user types.
-CREATE TYPE therapist_type AS ENUM ('ot', 'physio', 'speech');
+-- Top-level therapist types.
+CREATE TYPE therapist_type AS ENUM ('unknown', 'ergo', 'physio', 'logo');
 
 -- Approval status for therapist accounts.
 CREATE TYPE approval_state AS ENUM ('new', 'approved', 'edits_pending', 'suspended');
 
--- One record per therapist user. Newly created user profiles are not
--- visible in search results until they are approved, which generally
--- requires that a minimal set of information is filled in (to be
--- really minimal, that would just be email, name and therapist type).
+-- One record per therapist user. Newly created therapist profiles are
+-- not visible in search results until they are approved, which
+-- generally requires that a minimal set of information is filled in
+-- (to be really minimal, that would just be email, name and therapist
+-- type).
 --
 -- The administrative interface shows new profiles as "pending
 -- approval" once the minimal set of data is included.
 --
 -- TODO: ADD KK CONTRACT STATUS
 -- TODO: ADD LAT/LON LOCATION DATA, GEOCODED AT SETUP TIME?
-CREATE TABLE users (
+CREATE TABLE therapists (
   id               SERIAL PRIMARY KEY,
   email            TEXT UNIQUE NOT NULL,
-  type             therapist_type NOT NULL DEFAULT 'ot',
+  type             therapist_type NOT NULL DEFAULT 'unknown',
   name             TEXT,
   street_address   TEXT,
   city             TEXT,
   postcode         TEXT,
   country          TEXT,
   phone            TEXT,
+  website          TEXT,
+  languages        TEXT[],
   short_profile    TEXT,
   full_profile     TEXT,
   status           approval_state DEFAULT 'new',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- When a user edits their profile, those edits are not immediately
--- reflected in the public view of their profile. Instead the edits
--- are held in a row of this table as a JSON-based field-level patch
--- between the public view and the newly edited version of the
--- profile. When the edits are approved by an administrator, the patch
--- is folded into the profile in the main users table. Any extra edits
--- before approval are folded into the patch in this table so that
--- edits can be approved all at once.
-CREATE TABLE user_pending_edits (
-  id         SERIAL PRIMARY KEY,
-  user_id    INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  patch      JSONB,
-  edited_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+-- When a therapist edits their profile, those edits are not
+-- immediately reflected in the public view of their profile. Instead
+-- the edits are held in a row of this table as a JSON-based
+-- field-level patch between the public view and the newly edited
+-- version of the profile. When the edits are approved by an
+-- administrator, the patch is folded into the profile in the main
+-- therapists table. Any extra edits before approval are folded into
+-- the patch in this table so that edits can be approved all at once.
+CREATE TABLE therapist_pending_edits (
+  id            SERIAL PRIMARY KEY,
+  therapist_id  INTEGER UNIQUE NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
+  patch         JSONB,
+  edited_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Auxiliary table storing user profile images.
+-- Auxiliary table storing therapist profile images.
 -- TODO: CHANGE THIS TO USE AN EXTERNAL IMAGE MANAGEMENT SERVICE
 CREATE TABLE images (
-  id         SERIAL PRIMARY KEY,
-  user_id    INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  extension  TEXT NOT NULL,
-  data       BYTEA
+  id            SERIAL PRIMARY KEY,
+  therapist_id  INTEGER UNIQUE NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
+  extension     TEXT NOT NULL,
+  data          BYTEA
 );
 
 -- -- SELECT id, email, name,
 -- --        street_address, city, postcode, country, phone,
--- --        photo, short_profile FROM users WHERE id IN
--- --  (SELECT user_id FROM user_sub_specialities WHERE sub_speciality_id = ?);
+-- --        photo, short_profile FROM therapists WHERE id IN
+-- --  (SELECT therapist_id FROM therapist_specialities WHERE speciality_id = ?);
 
--- Sub-specialities for each therapist type.
-CREATE TABLE sub_specialities (
-  id          SERIAL PRIMARY KEY,
-  speciality  therapist_type,
-  name        TEXT,
-  label       TEXT,
-  icon        INTEGER REFERENCES images(id) ON DELETE SET NULL,
-  deleted     BOOLEAN DEFAULT false,
+-- Specialities for each therapist type.
+--
+-- The optional icon field gives the filename of an icon in site
+-- static storage, accessed as
+-- https://www.tele-therapie.at/images/<icon>.
+CREATE TABLE specialities (
+  id       SERIAL PRIMARY KEY,
+  type     therapist_type,
+  label    TEXT,
+  icon     TEXT,
 
   UNIQUE(speciality, name)
 );
 
--- -- Join table for therapist user/sub-speciality many-to-many relation.
-CREATE TABLE user_sub_specialities (
-  id                 SERIAL PRIMARY KEY,
-  user_id            INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  sub_speciality_id  INTEGER REFERENCES sub_specialities(id) ON DELETE RESTRICT
+-- Join table for therapist therapist/speciality many-to-many relation.
+CREATE TABLE therapist_specialities (
+  id             SERIAL PRIMARY KEY,
+  therapist_id   INTEGER REFERENCES therapists(id) ON DELETE CASCADE,
+  speciality_id  INTEGER REFERENCES specialities(id) ON DELETE CASCADE,
+  index          INTEGER NOT NULL
 );
 
 
@@ -104,16 +110,16 @@ CREATE INDEX login_tokens_expired_index ON login_tokens(expires_at);
 -- Session IDs for logins.
 CREATE TABLE sessions (
   token    TEXT PRIMARY KEY,
-  user_id  INTEGER REFERENCES users(id) ON DELETE CASCADE
+  therapist_id  INTEGER REFERENCES therapists(id) ON DELETE CASCADE
 );
 
 
--- Daily statistics about user creation and deletion.
-CREATE TABLE user_statistics (
-  id             SERIAL PRIMARY KEY,
-  date           DATE UNIQUE NOT NULL DEFAULT current_date,
-  new_users      INTEGER DEFAULT 0,
-  deleted_users  INTEGER DEFAULT 0
+-- Daily statistics about therapist creation and deletion.
+CREATE TABLE therapist_statistics (
+  id                  SERIAL PRIMARY KEY,
+  date                DATE UNIQUE NOT NULL DEFAULT current_date,
+  new_therapists      INTEGER DEFAULT 0,
+  deleted_therapists  INTEGER DEFAULT 0
 );
 
 -- Daily search statistics.
@@ -130,13 +136,13 @@ CREATE TABLE search_statistics (
 -- +migrate Down
 
 DROP TABLE search_statistics;
-DROP TABLE user_statistics;
+DROP TABLE therapist_statistics;
 DROP TABLE sessions;
 DROP TABLE login_tokens;
-DROP TABLE user_sub_specialities;
+DROP TABLE therapist_sub_specialities;
 DROP TABLE sub_specialities;
-DROP TABLE user_pending_edits;
-DROP TABLE users;
+DROP TABLE therapist_pending_edits;
+DROP TABLE therapists;
 DROP TABLE images;
 DROP TYPE approval_state;
 DROP TYPE therapist_type;

@@ -1,25 +1,38 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/Tele-Therapie-Osterreich/ttat-api/chassis"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
+	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 )
 
 func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID, _ := accessControl(r)
+	userID, actingUserID := accessControl(r, true)
+	fmt.Println("userID =", userID)
+	if userID != nil {
+		fmt.Println("*userID =", *userID)
+	}
+	fmt.Println("actingUserID =", actingUserID)
+	if actingUserID != nil {
+		fmt.Println("*actingUserID =", *actingUserID)
+	}
 	if userID == nil {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
 
 	user, err := s.db.UserByID(*userID)
 	if err == db.ErrUserNotFound {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
 	if err != nil {
 		return nil, err
+	}
+	if user.Status != types.Approved &&
+		(actingUserID == nil || *actingUserID != user.ID) {
+		return NotFound(w)
 	}
 
 	image, err := s.db.ImageByUserID(*userID)
@@ -31,14 +44,14 @@ func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}
 }
 
 func (s *Server) userDelete(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID, _ := accessControl(r)
+	userID, _ := accessControl(r, false)
 	if userID == nil {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
 
 	err := s.db.DeleteUser(*userID)
 	if err == db.ErrUserNotFound {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
 	if err != nil {
 		return nil, err
@@ -48,20 +61,19 @@ func (s *Server) userDelete(w http.ResponseWriter, r *http.Request) (interface{}
 }
 
 func (s *Server) userUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	// userID, actingUserID, adminAction := accessControl(r)
-	userID, actingUserID := accessControl(r)
+	userID, actingUserID := accessControl(r, false)
 	if userID == nil {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
-	if *actingUserID != *userID { // && !adminAction {
+	if *actingUserID != *userID {
 		http.Error(w, "illegal patch", http.StatusForbidden)
 		return nil, nil
 	}
 
 	// Read patch request body.
-	body, err := chassis.ReadBody(r, 0)
+	body, err := ReadBody(r, 0)
 	if err != nil {
-		return chassis.BadRequest(w, err.Error())
+		return BadRequest(w, err.Error())
 	}
 
 	// Look up user value and patch it.

@@ -11,26 +11,25 @@ import (
 // types of therapist: OT, physiotherapist and speech therapist.
 type TherapistType uint
 
+// TherapistType enumeration values.
 const (
-	// OccupationalTherapist represents an occupational therapist.
-	OccupationalTherapist = iota
-
-	// Physiotherapist represents a physiotherapist.
+	UnknownTherapistType TherapistType = iota
+	OccupationalTherapist
 	Physiotherapist
-
-	// SpeechTherapist represents a speech therapist.
 	SpeechTherapist
 )
 
 // String converts an approval state to its string representation.
 func (t TherapistType) String() string {
 	switch t {
+	case UnknownTherapistType:
+		return "unknown"
 	case OccupationalTherapist:
-		return "ot"
+		return "ergo"
 	case Physiotherapist:
 		return "physio"
 	case SpeechTherapist:
-		return "speech"
+		return "logo"
 	default:
 		return "<unknown therapist type>"
 	}
@@ -40,11 +39,13 @@ func (t TherapistType) String() string {
 // TherapistType.
 func (t *TherapistType) FromString(s string) error {
 	switch s {
-	case "ot":
+	case "unknown":
+		*t = UnknownTherapistType
+	case "ergo":
 		*t = OccupationalTherapist
 	case "physio":
 		*t = Physiotherapist
-	case "speech":
+	case "logo":
 		*t = SpeechTherapist
 	default:
 		return errors.New("unknown therapist type '" + s + "'")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
@@ -38,6 +39,9 @@ type User struct {
 
 	// Contact telephone number for therapist (optional).
 	Phone *string `db:"phone"`
+
+	// Languages spoken (list of ISO-639 2-letter codes)
+	Languages pq.StringArray `db:"languages"`
 
 	// Short profile text.
 	ShortProfile *string `db:"short_profile"`

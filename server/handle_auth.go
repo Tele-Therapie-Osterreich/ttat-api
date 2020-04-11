@@ -6,17 +6,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Tele-Therapie-Osterreich/ttat-api/chassis"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/messages"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 )
 
-func (s *Server) requestLoginEmail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) RequestLoginEmail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body.
 	body := messages.ReqLoginEmailRequest{}
-	err := chassis.Unmarshal(r.Body, &body)
+	err := Unmarshal(r.Body, &body)
 	if err != nil {
-		return chassis.BadRequest(w, err.Error())
+		return BadRequest(w, err.Error())
 	}
 
 	// Default email language to English.
@@ -29,24 +28,24 @@ func (s *Server) requestLoginEmail(w http.ResponseWriter, r *http.Request) (inte
 	if err != nil {
 		return nil, err
 	}
-	s.SendEmail("login-email-request", body.Email, body.Language,
+	s.mailer.Send("login-email-request", body.Email, body.Language,
 		map[string]string{"login_token": token})
 
-	return chassis.NoContent(w)
+	return NoContent(w)
 }
 
-func (s *Server) login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body to get login token.
 	req := messages.LoginRequest{}
-	err := chassis.Unmarshal(r.Body, &req)
+	err := Unmarshal(r.Body, &req)
 	if err != nil {
-		return chassis.BadRequest(w, err.Error())
+		return BadRequest(w, err.Error())
 	}
 
 	// Look up login token and if not found or expired, return error.
 	email, _, err := s.db.CheckLoginToken(req.LoginToken)
 	if err != nil {
-		return chassis.BadRequest(w, "Unknown login token")
+		return BadRequest(w, "Unknown login token")
 	}
 
 	// Perform login processing.
@@ -81,11 +80,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) (interface{}, err
 	return &resp, nil
 }
 
-func (s *Server) logout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) Logout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Get session cookie. If there is no session, this is a no-op.
 	authInfo := AuthInfoFromContext(r.Context())
 	if !authInfo.Authenticated {
-		return chassis.NotFound(w)
+		return NotFound(w)
 	}
 
 	if authInfo.UserID != 0 {
@@ -94,7 +93,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) (interface{}, er
 	}
 
 	s.clearSessionCookie(w)
-	return chassis.NoContent(w)
+	return NoContent(w)
 }
 
 // Delete session cookie by setting expiry in past.

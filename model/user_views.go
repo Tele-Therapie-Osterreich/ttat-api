@@ -15,6 +15,7 @@ type UserFullProfile struct {
 	Phone         *string             `json:"phone"`
 	ShortProfile  *string             `json:"short_profile"`
 	FullProfile   *string             `json:"full_profile"`
+	Status        types.ApprovalState `json:"status"`
 	Photo         *string             `json:"photo"`
 	// TODO: ADD SUB-SPECIALITIES
 }
@@ -36,6 +37,7 @@ func UserFullProfileFromUser(user *User, photo *Image) *UserFullProfile {
 		Phone:         user.Phone,
 		ShortProfile:  user.ShortProfile,
 		FullProfile:   user.FullProfile,
+		Status:        user.Status,
 		Photo:         photoLink,
 	}
 }
