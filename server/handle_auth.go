@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -10,12 +11,27 @@ import (
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 )
 
+var emailRE = regexp.MustCompile(`(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$`)
+
+// RequestLoginEmail handles requests to /auth/request-login-email.
 func (s *Server) RequestLoginEmail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body.
 	body := messages.ReqLoginEmailRequest{}
 	err := Unmarshal(r.Body, &body)
 	if err != nil {
-		return BadRequest(w, err.Error())
+		return BadRequest(w, messages.APIError{
+			Code:    messages.InvalidJSONBody,
+			Message: "invalid JSON body for login email request",
+		})
+	}
+
+	// Check email address is reasonable.
+	if !emailRE.MatchString(body.Email) {
+		return BadRequest(w, messages.APIError{
+			Code:    messages.InvalidEmailAddress,
+			Message: "invalid email address for login email request",
+			Field:   body.Email,
+		})
 	}
 
 	// Default email language to English.
@@ -34,18 +50,25 @@ func (s *Server) RequestLoginEmail(w http.ResponseWriter, r *http.Request) (inte
 	return NoContent(w)
 }
 
+// Login handles requests to /auth/login.
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body to get login token.
 	req := messages.LoginRequest{}
 	err := Unmarshal(r.Body, &req)
 	if err != nil {
-		return BadRequest(w, err.Error())
+		return BadRequest(w, messages.APIError{
+			Code:    messages.InvalidJSONBody,
+			Message: "invalid JSON body for login request",
+		})
 	}
 
 	// Look up login token and if not found or expired, return error.
 	email, _, err := s.db.CheckLoginToken(req.LoginToken)
 	if err != nil {
-		return BadRequest(w, "Unknown login token")
+		return BadRequest(w, messages.APIError{
+			Code:    messages.UnknownLoginToken,
+			Message: "unknown login token for login request",
+		})
 	}
 
 	// Perform login processing.

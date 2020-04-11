@@ -5,15 +5,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
 	"github.com/go-chi/chi"
+
+	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
+	"github.com/Tele-Therapie-Osterreich/ttat-api/messages"
 )
 
 func (s *Server) imageDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	imageIDAndExt := strings.Split(chi.URLParam(r, "id_and_extension"), ".")
 	imageID, err := strconv.Atoi(imageIDAndExt[0])
 	if len(imageIDAndExt) != 2 || err != nil {
-		return BadRequest(w, "invalid image filename")
+		return BadRequest(w, messages.APIError{
+			Code:    messages.InvalidImageFilename,
+			Message: "invalid image filename for image detail",
+		})
 	}
 
 	image, err := s.db.ImageByID(imageID)

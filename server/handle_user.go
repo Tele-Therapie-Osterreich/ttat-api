@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
+	"github.com/Tele-Therapie-Osterreich/ttat-api/messages"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 )
@@ -73,7 +74,10 @@ func (s *Server) userUpdate(w http.ResponseWriter, r *http.Request) (interface{}
 	// Read patch request body.
 	body, err := ReadBody(r, 0)
 	if err != nil {
-		return BadRequest(w, err.Error())
+		return BadRequest(w, messages.APIError{
+			Code:    messages.InvalidJSONBody,
+			Message: "invalid JSON body for therapist account update",
+		})
 	}
 
 	// Look up user value and patch it.

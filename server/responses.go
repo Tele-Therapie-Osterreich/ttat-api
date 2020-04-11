@@ -3,19 +3,15 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-)
 
-// JSON error response.
-type errResp struct {
-	Message string `json:"message"`
-}
+	"github.com/Tele-Therapie-Osterreich/ttat-api/messages"
+)
 
 // BadRequest sets up an HTTP 400 Bad Request with a given error
 // message and returns the (nil, nil) pair used by SimpleHandler to
 // signal that the response has been dealt with.
-func BadRequest(w http.ResponseWriter, msg string) (interface{}, error) {
-	rsp := errResp{msg}
-	body, _ := json.Marshal(rsp)
+func BadRequest(w http.ResponseWriter, err messages.APIError) (interface{}, error) {
+	body, _ := json.Marshal(err)
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(body)
