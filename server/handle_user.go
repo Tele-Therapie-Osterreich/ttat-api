@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
@@ -10,16 +9,9 @@ import (
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 )
 
+// TODO: REFACTOR WITH selfDetail
 func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID, actingUserID := accessControl(r, true)
-	fmt.Println("userID =", userID)
-	if userID != nil {
-		fmt.Println("*userID =", *userID)
-	}
-	fmt.Println("actingUserID =", actingUserID)
-	if actingUserID != nil {
-		fmt.Println("*actingUserID =", *actingUserID)
-	}
+	userID := getIntParam(r, "id")
 	if userID == nil {
 		return NotFound(w)
 	}
@@ -31,8 +23,7 @@ func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}
 	if err != nil {
 		return nil, err
 	}
-	if user.Status != types.Approved &&
-		(actingUserID == nil || *actingUserID != user.ID) {
+	if user.Status != types.Approved {
 		return NotFound(w)
 	}
 
@@ -41,11 +32,35 @@ func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}
 		return nil, err
 	}
 
+	// TODO: Also need specialities...
 	return model.UserFullProfileFromUser(user, image), nil
 }
 
-func (s *Server) userDelete(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID, _ := accessControl(r, false)
+func (s *Server) selfDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	userID := accessControl(r, true)
+	if userID == nil {
+		return NotFound(w)
+	}
+
+	user, err := s.db.UserByID(*userID)
+	if err == db.ErrUserNotFound {
+		return NotFound(w)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	image, err := s.db.ImageByUserID(*userID)
+	if err != db.ErrUserNotFound && err != nil {
+		return nil, err
+	}
+
+	// TODO: Also need specialities...
+	return model.UserFullProfileFromUser(user, image), nil
+}
+
+func (s *Server) selfDelete(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	userID := accessControl(r, false)
 	if userID == nil {
 		return NotFound(w)
 	}
@@ -61,14 +76,10 @@ func (s *Server) userDelete(w http.ResponseWriter, r *http.Request) (interface{}
 	return nil, nil
 }
 
-func (s *Server) userUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID, actingUserID := accessControl(r, false)
+func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	userID := accessControl(r, false)
 	if userID == nil {
 		return NotFound(w)
-	}
-	if *actingUserID != *userID {
-		http.Error(w, "illegal patch", http.StatusForbidden)
-		return nil, nil
 	}
 
 	// Read patch request body.

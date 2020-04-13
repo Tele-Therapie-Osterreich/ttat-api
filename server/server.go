@@ -43,7 +43,7 @@ func NewServer(cfg *Config, db db.DB, mailer mail.Mailer) *Server {
 		mailer:        mailer,
 	}
 	s.srv = &http.Server{
-		Handler: s.routes(cfg.DevMode, cfg.CSRFSecret, corsOrigins),
+		Handler: s.routes(cfg.DevMode, cfg.CSRFSecret, corsOrigins, false),
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
 	}
 

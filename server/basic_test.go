@@ -8,7 +8,9 @@ import (
 )
 
 func TestHealth(t *testing.T) {
-	rr := apiTest(t, Health, "GET", []byte(""))
+	_, _, r := mockServer()
+
+	rr := apiTest(t, r, "GET", "/", nil)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
 	assert.Equal(t, rr.Body.String(), `OK`)

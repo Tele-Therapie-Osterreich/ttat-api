@@ -12,16 +12,11 @@ import (
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 )
 
-const TestEmail = "test@example.com"
-const TestToken = "test-token"
-const TestUserID = 1
-const TestSession = "test-session"
-
 func TestRequestLoginEmailBadJSON(t *testing.T) {
-	s, d, m := MockServer()
+	d, m, r := mockServer()
 
-	rr := apiTest(t, SimpleHandler(s.RequestLoginEmail),
-		"POST", []byte(`{"broken":}`))
+	rr := apiTest(t, r, "POST", "/auth/request-login-email",
+		&apiOptions{bodyJSON: []byte(`{"broken":}`)})
 
 	assert.Equal(t, rr.Code, http.StatusBadRequest)
 	resp := messages.APIError{}
@@ -33,15 +28,13 @@ func TestRequestLoginEmailBadJSON(t *testing.T) {
 }
 
 func TestRequestLoginEmailBadEmail(t *testing.T) {
-	s, d, m := MockServer()
+	d, m, r := mockServer()
 
-	reqLoginEmail := messages.ReqLoginEmailRequest{
-		Email:    "bob@x",
-		Language: "en",
-	}
-	body, _ := json.Marshal(reqLoginEmail)
-
-	rr := apiTest(t, SimpleHandler(s.RequestLoginEmail), "POST", body)
+	rr := apiTest(t, r, "POST", "/auth/request-login-email",
+		&apiOptions{body: &messages.ReqLoginEmailRequest{
+			Email:    "bob@x",
+			Language: "en",
+		}})
 
 	assert.Equal(t, rr.Code, http.StatusBadRequest)
 	resp := messages.APIError{}
@@ -53,19 +46,17 @@ func TestRequestLoginEmailBadEmail(t *testing.T) {
 }
 
 func TestRequestLoginEmail(t *testing.T) {
-	s, d, m := MockServer()
+	d, m, r := mockServer()
 
 	d.On("CreateLoginToken", TestEmail, "en").Return(TestToken, nil)
 	m.On("Send", "login-email-request", TestEmail, "en",
 		map[string]string{"login_token": TestToken}).Return(nil)
 
-	reqLoginEmail := messages.ReqLoginEmailRequest{
-		Email:    TestEmail,
-		Language: "en",
-	}
-	body, _ := json.Marshal(reqLoginEmail)
-
-	rr := apiTest(t, SimpleHandler(s.RequestLoginEmail), "POST", body)
+	rr := apiTest(t, r, "POST", "/auth/request-login-email",
+		&apiOptions{body: &messages.ReqLoginEmailRequest{
+			Email:    TestEmail,
+			Language: "en",
+		}})
 
 	assert.Equal(t, rr.Code, http.StatusNoContent)
 	assert.Empty(t, rr.Body.String())
@@ -75,16 +66,14 @@ func TestRequestLoginEmail(t *testing.T) {
 }
 
 func TestLoginBadLoginToken(t *testing.T) {
-	s, d, m := MockServer()
+	d, m, r := mockServer()
 
 	d.On("CheckLoginToken", "bad-token").Return("", "", db.ErrLoginTokenNotFound)
 
-	login := messages.LoginRequest{
-		LoginToken: "bad-token",
-	}
-	body, _ := json.Marshal(login)
-
-	rr := apiTest(t, SimpleHandler(s.Login), "POST", body)
+	rr := apiTest(t, r, "POST", "/auth/login",
+		&apiOptions{body: &messages.LoginRequest{
+			LoginToken: "bad-token",
+		}})
 
 	assert.Equal(t, rr.Code, http.StatusBadRequest)
 	resp := messages.APIError{}
@@ -96,7 +85,7 @@ func TestLoginBadLoginToken(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	s, d, m := MockServer()
+	d, m, r := mockServer()
 
 	d.On("CheckLoginToken", TestToken).Return(TestEmail, "en", nil)
 	u := model.User{
@@ -106,12 +95,10 @@ func TestLogin(t *testing.T) {
 	d.On("LoginUser", TestEmail).Return(&u, nil, true, nil)
 	d.On("CreateSession", TestUserID).Return(TestSession, nil)
 
-	login := messages.LoginRequest{
-		LoginToken: TestToken,
-	}
-	body, _ := json.Marshal(login)
-
-	rr := apiTest(t, SimpleHandler(s.Login), "POST", body)
+	rr := apiTest(t, r, "POST", "/auth/login",
+		&apiOptions{body: &messages.LoginRequest{
+			LoginToken: TestToken,
+		}})
 	assert.Equal(t, rr.Code, http.StatusOK)
 
 	resp := messages.LoginResponse{}

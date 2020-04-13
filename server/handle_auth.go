@@ -14,7 +14,7 @@ import (
 var emailRE = regexp.MustCompile(`(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$`)
 
 // RequestLoginEmail handles requests to /auth/request-login-email.
-func (s *Server) RequestLoginEmail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) requestLoginEmail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body.
 	body := messages.ReqLoginEmailRequest{}
 	err := Unmarshal(r.Body, &body)
@@ -51,7 +51,7 @@ func (s *Server) RequestLoginEmail(w http.ResponseWriter, r *http.Request) (inte
 }
 
 // Login handles requests to /auth/login.
-func (s *Server) Login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) login(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Decode request body to get login token.
 	req := messages.LoginRequest{}
 	err := Unmarshal(r.Body, &req)
@@ -103,7 +103,8 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) (interface{}, err
 	return &resp, nil
 }
 
-func (s *Server) Logout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+// logout handles requests to /auth/logout.
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	// Get session cookie. If there is no session, this is a no-op.
 	authInfo := AuthInfoFromContext(r.Context())
 	if !authInfo.Authenticated {
