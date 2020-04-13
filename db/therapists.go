@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 
@@ -59,7 +58,7 @@ func (pg *PGClient) UpdateTherapist(th *model.Therapist) error {
 
 	// Check read-only fields.
 	if th.Email != check.Email || th.Status != check.Status ||
-		th.CreatedAt != check.CreatedAt {
+		!th.CreatedAt.Equal(check.CreatedAt) {
 		return ErrReadOnlyField
 	}
 
@@ -109,7 +108,6 @@ UPDATE therapists
 
 // DeleteTherapist deletes the given therapist account.
 func (pg *PGClient) DeleteTherapist(thID int) error {
-	fmt.Println("===> DeleteTherapist")
 	result, err := pg.DB.Exec(deleteTherapist, thID)
 	if err != nil {
 		return err

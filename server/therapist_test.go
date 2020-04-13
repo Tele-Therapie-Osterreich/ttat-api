@@ -13,6 +13,7 @@ import (
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestTherapistDetailUnknownTherapistID(t *testing.T) {
@@ -40,7 +41,7 @@ func TestTherapistDetailNoImage(t *testing.T) {
 
 func TestTherapistDetailWithImage(t *testing.T) {
 	d, m, r := mockServer()
-	therapistSetup(d, &therapistOptions{image: true})
+	therapistSetup(d, &setupOptions{image: true})
 
 	rr := apiTest(t, r, "GET", testTherapistURL("/therapist/%d"), nil)
 
@@ -50,31 +51,40 @@ func TestTherapistDetailWithImage(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestSelfDetailUnauthenticated(t *testing.T) {
-	d, m, r := mockServer()
+func TestSelfDetail(t *testing.T) {
+	tests := []struct {
+		auth bool
+		code int
+	}{
+		{false, http.StatusNotFound},
+		{true, http.StatusOK},
+	}
+	for _, test := range tests {
+		d, m, r := mockServer()
+		therapistSetup(d, &setupOptions{
+			session:   test.auth,
+			image:     test.auth,
+			needsAuth: true,
+		})
 
-	rr := apiTest(t, r, "GET", "/me", nil)
+		session := ""
+		if test.auth {
+			session = TestSession
+		}
+		rr := apiTest(t, r, "GET", "/me", &apiOptions{session: session})
 
-	assert.Equal(t, rr.Code, http.StatusNotFound)
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
-}
-
-func TestSelfDetailAuthenticated(t *testing.T) {
-	d, m, r := mockServer()
-	therapistSetup(d, &therapistOptions{image: true, session: true})
-
-	rr := apiTest(t, r, "GET", "/me", &apiOptions{session: TestSession})
-
-	assert.Equal(t, rr.Code, http.StatusOK)
-	checkProfile(t, rr, &profileOptions{photo: testImageURL()})
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
+		assert.Equal(t, rr.Code, test.code)
+		if test.auth {
+			checkProfile(t, rr, &profileOptions{photo: testImageURL()})
+		}
+		d.AssertExpectations(t)
+		m.AssertExpectations(t)
+	}
 }
 
 // func TestSelfDetailPending(t *testing.T) {
 // 	d, m, r := mockServer()
-// 	therapistSetup(d, &therapistOptions{image: true, session: true, pendingEdits: true})
+// 	therapistSetup(d, &setupOptions{image: true, session: true, pendingEdits: true})
 
 // 	rr := apiTest(t, r, "GET", "/me?status=pending", &apiOptions{session: TestSession})
 
@@ -84,55 +94,90 @@ func TestSelfDetailAuthenticated(t *testing.T) {
 // 	m.AssertExpectations(t)
 // }
 
-func TestSelfDeleteUnauthenticated(t *testing.T) {
-	d, m, r := mockServer()
+func TestSelfDelete(t *testing.T) {
+	tests := []struct {
+		auth    bool
+		deleted bool
+		code    int
+	}{
+		{false, false, http.StatusNotFound},
+		{true, true, http.StatusNoContent},
+	}
+	for _, test := range tests {
+		d, m, r := mockServer()
+		therapistSetup(d, &setupOptions{
+			session:   test.auth,
+			needsAuth: true,
+			delete:    test.deleted,
+		})
 
-	rr := apiTest(t, r, "DELETE", "/me", nil)
+		session := ""
+		if test.auth {
+			session = TestSession
+		}
+		rr := apiTest(t, r, "DELETE", "/me", &apiOptions{session: session})
 
-	assert.Equal(t, rr.Code, http.StatusNotFound)
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
+		assert.Equal(t, rr.Code, test.code)
+		d.AssertExpectations(t)
+		m.AssertExpectations(t)
+	}
 }
 
-func TestSelfDeleteAuthenticated(t *testing.T) {
-	d, m, r := mockServer()
-	therapistSetup(d, &therapistOptions{session: true, delete: true})
+func TestSelfUpdateSimple(t *testing.T) {
+	tests := []struct {
+		auth    bool
+		updated bool
+		json    string
+		code    int
+	}{
+		{false, false, `{"name": "Name Changed"}`, http.StatusNotFound},
+		{true, false, `{"bad-json": `, http.StatusBadRequest},
+		{true, false, `{"email": "new@somewhere.com"}`, http.StatusBadRequest},
+		{true, true, `{"name": "Name Changed"}`, http.StatusOK},
+	}
+	for _, test := range tests {
+		d, m, r := mockServer()
+		therapistSetup(d, &setupOptions{
+			session:   test.auth,
+			needsAuth: true,
+			update:    test.updated,
+		})
 
-	rr := apiTest(t, r, "DELETE", "/me", &apiOptions{session: TestSession})
+		session := ""
+		if test.auth {
+			session = TestSession
+		}
+		rr := apiTest(t, r, "PATCH", "/me",
+			&apiOptions{
+				session:  session,
+				bodyJSON: []byte(test.json),
+			})
 
-	assert.Equal(t, rr.Code, http.StatusNoContent)
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
+		assert.Equal(t, rr.Code, test.code)
+		d.AssertExpectations(t)
+		m.AssertExpectations(t)
+	}
 }
 
-func TestSelfUpdateUnauthenticated(t *testing.T) {
-	d, m, r := mockServer()
-
-	rr := apiTest(t, r, "PATCH", "/me",
-		&apiOptions{bodyJSON: []byte(`{"name": "Name Changed"}`)})
-
-	assert.Equal(t, rr.Code, http.StatusNotFound)
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
-}
-
-func TestSelfUpdateInvalidJSONPatch(t *testing.T) {
-}
-
-func TestSelfUpdateReadOnlyField(t *testing.T) {
-}
-
-func TestSelfUpdateAuthenticated(t *testing.T) {
-}
-
-type therapistOptions struct {
-	image        bool
+type setupOptions struct {
+	needsAuth    bool
 	session      bool
+	image        bool
 	pendingEdits bool
 	delete       bool
+	update       bool
 }
 
-func therapistSetup(d *mocks.DB, opts *therapistOptions) {
+func therapistSetup(d *mocks.DB, opts *setupOptions) {
+	if opts != nil && opts.session {
+		id := TestTherapistID
+		d.On("LookupSession", TestSession).Return(&id, nil)
+	}
+
+	if opts != nil && opts.needsAuth && !opts.session {
+		return
+	}
+
 	if opts == nil || !opts.delete {
 		name := TestName
 		u := model.Therapist{
@@ -158,17 +203,16 @@ func therapistSetup(d *mocks.DB, opts *therapistOptions) {
 		d.On("ImageByTherapistID", TestTherapistID).Return(nil, nil)
 	}
 
-	if opts != nil && opts.session {
-		id := TestTherapistID
-		d.On("LookupSession", TestSession).Return(&id, nil)
-	}
-
 	if opts != nil && opts.pendingEdits {
 
 	}
 
 	if opts != nil && opts.delete {
 		d.On("DeleteTherapist", TestTherapistID).Return(nil)
+	}
+
+	if opts != nil && opts.update {
+		d.On("UpdateTherapist", mock.AnythingOfType("*model.Therapist")).Return(nil)
 	}
 }
 

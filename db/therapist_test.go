@@ -37,31 +37,33 @@ func TestTherapistRetrieval(t *testing.T) {
 	})
 }
 
-// func TestUpdateTherapist(t *testing.T) {
-// 	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
-// 		loadDefaultFixture(pg, t)
+func TestUpdateTherapistSimple(t *testing.T) {
+	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
+		LoadDefaultFixture(pg, t)
 
-// 		// Check that updating name, etc. work.
-// 		therapist, err := pg.TherapistByID("usr_TESTUSER1")
-// 		assert.Nil(t, err)
-// 		newName := "Update test"
-// 		therapist.Name = &newName
-// 		assert.Nil(t, pg.UpdateTherapist(therapist))
+		// Check that updating name, etc. work.
+		th, err := pg.TherapistByID(1)
+		assert.Nil(t, err)
+		newName := "Update test"
+		th.Name = &newName
+		assert.Nil(t, pg.UpdateTherapist(th))
+		thCheck, err := pg.TherapistByID(1)
+		assert.Equal(t, *thCheck.Name, newName)
 
-// 		// Check that updating with bad ID fails.
-// 		therapist.ID = "usr_UNKNOWN"
-// 		newName = "Update test 2"
-// 		therapist.Name = &newName
-// 		assert.Equal(t, pg.UpdateTherapist(therapist), ErrTherapistNotFound)
+		// Check that updating with bad ID fails.
+		th.ID = 123
+		newName = "Update test 2"
+		th.Name = &newName
+		assert.Equal(t, pg.UpdateTherapist(th), ErrTherapistNotFound)
 
-// 		// Check that updating email fails.
-// 		therapist, err = pg.TherapistByID("usr_TESTUSER1")
-// 		assert.Nil(t, err)
-// 		therapist.Email = "new@somewhere.com"
-// 		assert.Equal(t, pg.UpdateTherapist(therapist), ErrReadOnlyField,
-// 			"update of read-only field!")
-// 	})
-// }
+		// Check that updating email fails.
+		th, err = pg.TherapistByID(1)
+		assert.Nil(t, err)
+		th.Email = "new@somewhere.com"
+		assert.Equal(t, pg.UpdateTherapist(th), ErrReadOnlyField,
+			"update of read-only field!")
+	})
+}
 
 func TestDeleteTherapist(t *testing.T) {
 	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
