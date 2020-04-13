@@ -17,14 +17,14 @@ const (
 	TestEmail          = "test@example.com"
 	TestName           = "Test User"
 	TestToken          = "test-token"
-	TestUserID         = 2345
+	TestTherapistID    = 2345
 	TestImageID        = 997
 	TestImageExtension = "jpg"
 	TestSession        = "test-session"
 )
 
-func testUserURL(t string) string {
-	return fmt.Sprintf(t, TestUserID)
+func testTherapistURL(t string) string {
+	return fmt.Sprintf(t, TestTherapistID)
 }
 
 func testImageURL() string {

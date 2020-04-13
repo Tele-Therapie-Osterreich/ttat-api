@@ -24,7 +24,7 @@ func (s *Server) routes(devMode bool, csrfSecret string,
 
 	// r.Get("/image/{id_and_extension}", SimpleHandler(s.imageDetail))
 
-	r.Get("/user/{id:[0-9]+}", SimpleHandler(s.userDetail))
+	r.Get("/therapist/{id:[0-9]+}", SimpleHandler(s.therapistDetail))
 
 	r.Group(func(r chi.Router) {
 		r.Use(CredentialCtx(s))

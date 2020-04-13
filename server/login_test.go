@@ -1,3 +1,5 @@
+// +build !db
+
 package server
 
 import (
@@ -88,12 +90,12 @@ func TestLogin(t *testing.T) {
 	d, m, r := mockServer()
 
 	d.On("CheckLoginToken", TestToken).Return(TestEmail, "en", nil)
-	u := model.User{
-		ID:    TestUserID,
+	u := model.Therapist{
+		ID:    TestTherapistID,
 		Email: TestEmail,
 	}
-	d.On("LoginUser", TestEmail).Return(&u, nil, true, nil)
-	d.On("CreateSession", TestUserID).Return(TestSession, nil)
+	d.On("Login", TestEmail).Return(&u, nil, true, nil)
+	d.On("CreateSession", TestTherapistID).Return(TestSession, nil)
 
 	rr := apiTest(t, r, "POST", "/auth/login",
 		&apiOptions{body: &messages.LoginRequest{
@@ -103,7 +105,7 @@ func TestLogin(t *testing.T) {
 
 	resp := messages.LoginResponse{}
 	assert.Nil(t, json.Unmarshal(rr.Body.Bytes(), &resp))
-	assert.Equal(t, resp.UserProfile.ID, TestUserID)
+	assert.Equal(t, resp.Profile.ID, TestTherapistID)
 
 	d.AssertExpectations(t)
 	m.AssertExpectations(t)

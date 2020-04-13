@@ -2,8 +2,8 @@ package model
 
 import "github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 
-// UserFullProfile is a JSON view of the full profile for a user.
-type UserFullProfile struct {
+// TherapistFullProfile is a JSON view of the full profile for a therapist.
+type TherapistFullProfile struct {
 	ID            int                 `json:"id"`
 	Email         string              `json:"email"`
 	Type          types.TherapistType `json:"type"`
@@ -20,24 +20,24 @@ type UserFullProfile struct {
 	// TODO: ADD SUB-SPECIALITIES
 }
 
-// UserFullProfileFromUser creates a full profile view from a user.
-func UserFullProfileFromUser(user *User, photo *Image) *UserFullProfile {
+// TherapistFullProfileFromTherapist creates a full profile view from a therapist.
+func TherapistFullProfileFromTherapist(th *Therapist, photo *Image) *TherapistFullProfile {
 	var photoLink *string
 	if photo != nil {
 		photoLink = photo.MakeLink()
 	}
-	return &UserFullProfile{
-		ID:            user.ID,
-		Email:         user.Email,
-		Name:          user.Name,
-		StreetAddress: user.StreetAddress,
-		City:          user.City,
-		Postcode:      user.Postcode,
-		Country:       user.Country,
-		Phone:         user.Phone,
-		ShortProfile:  user.ShortProfile,
-		FullProfile:   user.FullProfile,
-		Status:        user.Status,
+	return &TherapistFullProfile{
+		ID:            th.ID,
+		Email:         th.Email,
+		Name:          th.Name,
+		StreetAddress: th.StreetAddress,
+		City:          th.City,
+		Postcode:      th.Postcode,
+		Country:       th.Country,
+		Phone:         th.Phone,
+		ShortProfile:  th.ShortProfile,
+		FullProfile:   th.FullProfile,
+		Status:        th.Status,
 		Photo:         photoLink,
 	}
 }

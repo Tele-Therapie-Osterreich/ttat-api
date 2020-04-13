@@ -86,7 +86,7 @@ CREATE TABLE specialities (
   label    TEXT,
   icon     TEXT,
 
-  UNIQUE(speciality, name)
+  UNIQUE(type, label)
 );
 
 -- Join table for therapist therapist/speciality many-to-many relation.
@@ -124,12 +124,12 @@ CREATE TABLE therapist_statistics (
 
 -- Daily search statistics.
 CREATE TABLE search_statistics (
-  id              SERIAL PRIMARY KEY,
-  date            DATE NOT NULL DEFAULT current_date,
-  sub_speciality  INTEGER NOT NULL REFERENCES sub_specialities(id) ON DELETE RESTRICT,
-  searches        INTEGER DEFAULT 0,
+  id          SERIAL PRIMARY KEY,
+  date        DATE NOT NULL DEFAULT current_date,
+  speciality  INTEGER NOT NULL REFERENCES specialities(id) ON DELETE RESTRICT,
+  searches    INTEGER DEFAULT 0,
 
-  UNIQUE (date, sub_speciality)
+  UNIQUE (date, speciality)
 );
 
 
@@ -139,10 +139,10 @@ DROP TABLE search_statistics;
 DROP TABLE therapist_statistics;
 DROP TABLE sessions;
 DROP TABLE login_tokens;
-DROP TABLE therapist_sub_specialities;
-DROP TABLE sub_specialities;
+DROP TABLE therapist_specialities;
+DROP TABLE specialities;
 DROP TABLE therapist_pending_edits;
-DROP TABLE therapists;
 DROP TABLE images;
+DROP TABLE therapists;
 DROP TYPE approval_state;
 DROP TYPE therapist_type;

@@ -10,13 +10,13 @@ import (
 )
 
 // Image is a database model representing an avatar image associated
-// with a user.
+// with a therapist.
 type Image struct {
 	// Unique ID of the image.
 	ID int `db:"id"`
 
-	// Unique ID of the user the image is associated with.
-	UserID int `db:"user_id"`
+	// Unique ID of the therapist the image is associated with.
+	TherapistID int `db:"therapist_id"`
 
 	// File extension for the image ("png" or "jpg").
 	Extension string `db:"extension"`
@@ -32,7 +32,7 @@ func (image *Image) MakeLink() *string {
 	return &s
 }
 
-// ImagePatch is a representation of an update to a user's image,
+// ImagePatch is a representation of an update to a therapist's image,
 // giving the file extension ("jpg" or "png") and the binary image
 // data.
 type ImagePatch struct {

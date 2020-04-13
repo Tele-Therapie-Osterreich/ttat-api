@@ -3,24 +3,17 @@ package db
 import (
 	"database/sql"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
 )
 
-// LoginUser performs login actions for a given email address:
+// Login performs login actions for a given email address:
 //
-//  - If an account with the given email address already exists in the
-//    database, then set the account's last_login field to the current time.
+// If an account with the given email address does not already exist
+// in the database, then create a new user account with the given
+// email address, defaulting all user information fields to empty.
 //
-//  - If an account with the given email address does not already
-//    exist in the database, then create a new user account with the
-//    given email address, defaulting all user information fields to
-//    empty and setting the new account's last_login field to the
-//    current time.
-//
-// In both cases, return the full user record of the logged in user.
-func (pg *PGClient) LoginUser(email string) (*model.User, *model.Image, bool, error) {
+// Returns the full therapist record of the logged in therapist.
+func (pg *PGClient) Login(email string) (*model.Therapist, *model.Image, bool, error) {
 	tx, err := pg.DB.Beginx()
 	if err != nil {
 		return nil, nil, false, err
@@ -34,21 +27,20 @@ func (pg *PGClient) LoginUser(email string) (*model.User, *model.Image, bool, er
 		}
 	}()
 
-	user := &model.User{}
-	err = tx.Get(user, userByEmail, email)
+	th := &model.Therapist{}
+	err = tx.Get(th, therapistByEmail, email)
 	if err == nil {
-		image, err := pg.ImageByUserID(user.ID)
+		image, err := pg.ImageByTherapistID(th.ID)
 		if err != ErrImageNotFound && err != nil {
 			return nil, nil, false, err
 		}
-		return user, image, false, nil
+		return th, image, false, nil
 	}
 
-	log.Info().Msg("NEW USER")
-	user = &model.User{
+	th = &model.Therapist{
 		Email: email,
 	}
-	rows, err := tx.NamedQuery(createUser, user)
+	rows, err := tx.NamedQuery(createTherapist, th)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -57,21 +49,21 @@ func (pg *PGClient) LoginUser(email string) (*model.User, *model.Image, bool, er
 		return nil, nil, false, sql.ErrNoRows
 	}
 
-	err = rows.Scan(&user.ID)
+	err = rows.Scan(&th.ID)
 	if err != nil {
 		return nil, nil, false, err
 	}
 
-	return user, nil, true, nil
+	return th, nil, true, nil
 }
 
-const userByEmail = `
+const therapistByEmail = `
 SELECT id, email, type, name,
        street_address, city, postcode, country,
-       phone, short_profile, full_profile,
+       phone, languages, short_profile, full_profile,
        status, created_at
-  FROM users
+  FROM therapists
  WHERE email = $1`
 
-const createUser = `
-INSERT INTO users (email) VALUES (:email) RETURNING id`
+const createTherapist = `
+INSERT INTO therapists (email) VALUES (:email) RETURNING id`

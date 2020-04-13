@@ -1,3 +1,5 @@
+// +build !db
+
 package server
 
 import (
@@ -13,22 +15,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUserDetailUnknownUserID(t *testing.T) {
+func TestTherapistDetailUnknownTherapistID(t *testing.T) {
 	d, m, r := mockServer()
-	d.On("UserByID", TestUserID).Return(nil, db.ErrUserNotFound)
+	d.On("TherapistByID", TestTherapistID).Return(nil, db.ErrTherapistNotFound)
 
-	rr := apiTest(t, r, "GET", testUserURL("/user/%d"), nil)
+	rr := apiTest(t, r, "GET", testTherapistURL("/therapist/%d"), nil)
 
 	assert.Equal(t, rr.Code, http.StatusNotFound)
 	d.AssertExpectations(t)
 	m.AssertExpectations(t)
 }
 
-func TestUserDetailNoImage(t *testing.T) {
+func TestTherapistDetailNoImage(t *testing.T) {
 	d, m, r := mockServer()
-	userSetup(d, nil)
+	therapistSetup(d, nil)
 
-	rr := apiTest(t, r, "GET", testUserURL("/user/%d"), nil)
+	rr := apiTest(t, r, "GET", testTherapistURL("/therapist/%d"), nil)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
 	checkProfile(t, rr, nil)
@@ -36,11 +38,11 @@ func TestUserDetailNoImage(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestUserDetailWithImage(t *testing.T) {
+func TestTherapistDetailWithImage(t *testing.T) {
 	d, m, r := mockServer()
-	userSetup(d, &userOptions{image: true})
+	therapistSetup(d, &therapistOptions{image: true})
 
-	rr := apiTest(t, r, "GET", testUserURL("/user/%d"), nil)
+	rr := apiTest(t, r, "GET", testTherapistURL("/therapist/%d"), nil)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
 	checkProfile(t, rr, &profileOptions{photo: testImageURL()})
@@ -60,7 +62,7 @@ func TestSelfDetailUnauthenticated(t *testing.T) {
 
 func TestSelfDetailAuthenticated(t *testing.T) {
 	d, m, r := mockServer()
-	userSetup(d, &userOptions{image: true, session: true})
+	therapistSetup(d, &therapistOptions{image: true, session: true})
 
 	rr := apiTest(t, r, "GET", "/me", &apiOptions{session: TestSession})
 
@@ -70,17 +72,17 @@ func TestSelfDetailAuthenticated(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestSelfDetailPending(t *testing.T) {
-	d, m, r := mockServer()
-	userSetup(d, &userOptions{image: true, session: true, pendingEdits: true})
+// func TestSelfDetailPending(t *testing.T) {
+// 	d, m, r := mockServer()
+// 	therapistSetup(d, &therapistOptions{image: true, session: true, pendingEdits: true})
 
-	rr := apiTest(t, r, "GET", "/me?status=pending", &apiOptions{session: TestSession})
+// 	rr := apiTest(t, r, "GET", "/me?status=pending", &apiOptions{session: TestSession})
 
-	assert.Equal(t, rr.Code, http.StatusOK)
-	checkProfile(t, rr, &profileOptions{photo: testImageURL(), edited: true})
-	d.AssertExpectations(t)
-	m.AssertExpectations(t)
-}
+// 	assert.Equal(t, rr.Code, http.StatusOK)
+// 	checkProfile(t, rr, &profileOptions{photo: testImageURL(), edited: true})
+// 	d.AssertExpectations(t)
+// 	m.AssertExpectations(t)
+// }
 
 func TestSelfDeleteUnauthenticated(t *testing.T) {
 	d, m, r := mockServer()
@@ -93,6 +95,14 @@ func TestSelfDeleteUnauthenticated(t *testing.T) {
 }
 
 func TestSelfDeleteAuthenticated(t *testing.T) {
+	d, m, r := mockServer()
+	therapistSetup(d, &therapistOptions{session: true, delete: true})
+
+	rr := apiTest(t, r, "DELETE", "/me", &apiOptions{session: TestSession})
+
+	assert.Equal(t, rr.Code, http.StatusNoContent)
+	d.AssertExpectations(t)
+	m.AssertExpectations(t)
 }
 
 func TestSelfUpdateUnauthenticated(t *testing.T) {
@@ -115,42 +125,50 @@ func TestSelfUpdateReadOnlyField(t *testing.T) {
 func TestSelfUpdateAuthenticated(t *testing.T) {
 }
 
-type userOptions struct {
+type therapistOptions struct {
 	image        bool
 	session      bool
 	pendingEdits bool
+	delete       bool
 }
 
-func userSetup(d *mocks.DB, opts *userOptions) {
-	name := TestName
-	u := model.User{
-		ID:     TestUserID,
-		Email:  TestEmail,
-		Name:   &name,
-		Type:   types.OccupationalTherapist,
-		Status: types.Approved,
+func therapistSetup(d *mocks.DB, opts *therapistOptions) {
+	if opts == nil || !opts.delete {
+		name := TestName
+		u := model.Therapist{
+			ID:     TestTherapistID,
+			Email:  TestEmail,
+			Name:   &name,
+			Type:   types.OccupationalTherapist,
+			Status: types.Approved,
+		}
+		d.On("TherapistByID", TestTherapistID).Return(&u, nil)
 	}
-	d.On("UserByID", TestUserID).Return(&u, nil)
 
 	if opts != nil && opts.image {
 		i := model.Image{
-			ID:        TestImageID,
-			UserID:    TestUserID,
-			Extension: TestImageExtension,
-			Data:      []byte{1, 2, 3, 4},
+			ID:          TestImageID,
+			TherapistID: TestTherapistID,
+			Extension:   TestImageExtension,
+			Data:        []byte{1, 2, 3, 4},
 		}
-		d.On("ImageByUserID", TestUserID).Return(&i, nil)
-	} else {
-		d.On("ImageByUserID", TestUserID).Return(nil, nil)
+		d.On("ImageByTherapistID", TestTherapistID).Return(&i, nil)
+	}
+	if opts == nil || !opts.delete {
+		d.On("ImageByTherapistID", TestTherapistID).Return(nil, nil)
 	}
 
 	if opts != nil && opts.session {
-		id := TestUserID
+		id := TestTherapistID
 		d.On("LookupSession", TestSession).Return(&id, nil)
 	}
 
 	if opts != nil && opts.pendingEdits {
 
+	}
+
+	if opts != nil && opts.delete {
+		d.On("DeleteTherapist", TestTherapistID).Return(nil)
 	}
 }
 
@@ -162,10 +180,10 @@ type profileOptions struct {
 func checkProfile(t *testing.T, rr *httptest.ResponseRecorder,
 	opts *profileOptions) {
 	t.Helper()
-	profile := model.UserFullProfile{}
+	profile := model.TherapistFullProfile{}
 	err := json.Unmarshal(rr.Body.Bytes(), &profile)
 	assert.Nil(t, err)
-	assert.Equal(t, profile.ID, TestUserID)
+	assert.Equal(t, profile.ID, TestTherapistID)
 	assert.Equal(t, profile.Email, TestEmail)
 	assert.NotNil(t, profile.Name)
 	if opts == nil || !opts.edited {

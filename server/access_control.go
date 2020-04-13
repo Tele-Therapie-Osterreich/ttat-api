@@ -9,7 +9,7 @@ import (
 // modifications of user account information and views of private
 // information. Returns the user ID being operated on.
 
-func accessControl(r *http.Request, open bool) *int {
+func accessControl(r *http.Request) *int {
 	// Get authentication information from context.
 	authInfo := AuthInfoFromContext(r.Context())
 

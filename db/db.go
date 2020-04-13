@@ -20,16 +20,16 @@ var ErrLoginTokenNotFound = errors.New("login token not found")
 // is used.
 var ErrSessionNotFound = errors.New("session not found")
 
-// ErrUserNotFound is the error returned when an attempt is made
-// to access or manipulate a user with an unknown ID.
-var ErrUserNotFound = errors.New("user ID not found")
+// ErrTherapistNotFound is the error returned when an attempt is made
+// to access or manipulate a therapist with an unknown ID.
+var ErrTherapistNotFound = errors.New("therapist ID not found")
 
 // ErrImageNotFound is the error returned when an attempt is made to
-// access or manipulate a user image with an unknown ID.
-var ErrImageNotFound = errors.New("user image ID not found")
+// access or manipulate a therapist image with an unknown ID.
+var ErrImageNotFound = errors.New("therapist image ID not found")
 
 // ErrReadOnlyField is the error returned when an attempt is made to
-// update a read-only field for a user (e.g. email, last login
+// update a read-only field for a therapist (e.g. email, last login
 // time).
 var ErrReadOnlyField = errors.New("attempt to modify read-only field")
 
@@ -39,19 +39,14 @@ type DB interface {
 	//
 	// LOGIN PROCESSING
 
-	// LoginUser performs login actions for a given email address:
+	// Login performs login actions for a given email address:
 	//
-	//  - If an account with the given email address already exists in the
-	//    database, then set the account's last_login field to the current time.
+	// If an account with the given email address does not already exist
+	// in the database, then create a new user account with the given
+	// email address, defaulting all user information fields to empty.
 	//
-	//  - If an account with the given email address does not already
-	//    exist in the database, then create a new user account with the
-	//    given email address, defaulting all user information fields to
-	//    empty and setting the new account's last_login field to the
-	//    current time.
-	//
-	// In both cases, return the full user record of the logged in user.
-	LoginUser(email string) (*model.User, *model.Image, bool, error)
+	// Returns the full therapist record of the logged in therapist.
+	Login(email string) (*model.Therapist, *model.Image, bool, error)
 
 	// ----------------------------------------------------------------------
 	//
@@ -62,46 +57,51 @@ type DB interface {
 	CreateLoginToken(email string, language string) (string, error)
 
 	// CheckLoginToken checks whether a given login token is valid and
-	// has not expired. If the token is good, the email address
-	// and language associated with it are returned.
+	// has not expired. If the token is good, the email address and
+	// language associated with it are returned.
 	CheckLoginToken(token string) (string, string, error)
 
 	// ----------------------------------------------------------------------
 	//
 	// SESSION HANDLING
 
-	// CreateSession generates a new session token for a user (or
-	// reconnects to an existing session for the given user).
-	CreateSession(userID int) (string, error)
+	// CreateSession generates a new session token for a therapist (or
+	// reconnects to an existing session for the given therapist).
+	CreateSession(thID int) (string, error)
 
 	// LookupSession checks a session token and returns the associated
-	// user ID if the session is known.
+	// therapist ID if the session is known.
 	LookupSession(token string) (*int, error)
 
-	// DeleteSessions deletes all sessions for a user, i.e. logs the
-	// user out of all devices where they're logged in.
-	DeleteSessions(userID int) error
+	// DeleteSessions deletes all sessions for a therapist, i.e. logs
+	// the therapist out of all devices where they're logged in.
+	DeleteSessions(thID int) error
 
 	// ----------------------------------------------------------------------
 	//
-	// USERS
+	// THERAPISTS
 
-	// UserByID returns the full user model for a given user ID.
-	UserByID(id int) (*model.User, error)
+	// TherapistByID returns the full therapist model for a given
+	// therapist ID.
+	TherapistByID(thID int) (*model.Therapist, error)
 
-	// UpdateUser updates the user's details in the database. The id,
-	// email, last_login and api_key fields are read-only using this
-	// method.
-	UpdateUser(therapist *model.User) error
+	// UpdateTherapist updates the therapist's details in the database.
+	// The id, email, status and created_at fields are read-only using
+	// this method.
+	UpdateTherapist(therapist *model.Therapist) error
 
-	// DeleteUser deletes the given user account.
-	DeleteUser(id int) error
+	// DeleteTherapist deletes the given therapist account.
+	DeleteTherapist(thID int) error
+
+	// ----------------------------------------------------------------------
+	//
+	// IMAGES
 
 	// Retrieve image.
-	ImageByID(id int) (*model.Image, error)
+	ImageByID(imgID int) (*model.Image, error)
 
-	// Retrieve user image.
-	ImageByUserID(id int) (*model.Image, error)
+	// Retrieve therapist image.
+	ImageByTherapistID(thID int) (*model.Image, error)
 
 	// Insert or update image.
 	UpsertImage(image *model.Image) (*model.Image, error)

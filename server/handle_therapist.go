@@ -10,63 +10,63 @@ import (
 )
 
 // TODO: REFACTOR WITH selfDetail
-func (s *Server) userDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID := getIntParam(r, "id")
-	if userID == nil {
+func (s *Server) therapistDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	thID := getIntParam(r, "id")
+	if thID == nil {
 		return NotFound(w)
 	}
 
-	user, err := s.db.UserByID(*userID)
-	if err == db.ErrUserNotFound {
+	th, err := s.db.TherapistByID(*thID)
+	if err == db.ErrTherapistNotFound {
 		return NotFound(w)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if user.Status != types.Approved {
+	if th.Status != types.Approved {
 		return NotFound(w)
 	}
 
-	image, err := s.db.ImageByUserID(*userID)
-	if err != db.ErrUserNotFound && err != nil {
+	image, err := s.db.ImageByTherapistID(*thID)
+	if err != db.ErrTherapistNotFound && err != nil {
 		return nil, err
 	}
 
 	// TODO: Also need specialities...
-	return model.UserFullProfileFromUser(user, image), nil
+	return model.TherapistFullProfileFromTherapist(th, image), nil
 }
 
 func (s *Server) selfDetail(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID := accessControl(r, true)
-	if userID == nil {
+	thID := accessControl(r)
+	if thID == nil {
 		return NotFound(w)
 	}
 
-	user, err := s.db.UserByID(*userID)
-	if err == db.ErrUserNotFound {
+	th, err := s.db.TherapistByID(*thID)
+	if err == db.ErrTherapistNotFound {
 		return NotFound(w)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	image, err := s.db.ImageByUserID(*userID)
-	if err != db.ErrUserNotFound && err != nil {
+	image, err := s.db.ImageByTherapistID(*thID)
+	if err != db.ErrTherapistNotFound && err != nil {
 		return nil, err
 	}
 
 	// TODO: Also need specialities...
-	return model.UserFullProfileFromUser(user, image), nil
+	return model.TherapistFullProfileFromTherapist(th, image), nil
 }
 
 func (s *Server) selfDelete(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID := accessControl(r, false)
-	if userID == nil {
+	thID := accessControl(r)
+	if thID == nil {
 		return NotFound(w)
 	}
 
-	err := s.db.DeleteUser(*userID)
-	if err == db.ErrUserNotFound {
+	err := s.db.DeleteTherapist(*thID)
+	if err == db.ErrTherapistNotFound {
 		return NotFound(w)
 	}
 	if err != nil {
@@ -77,8 +77,8 @@ func (s *Server) selfDelete(w http.ResponseWriter, r *http.Request) (interface{}
 }
 
 func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	userID := accessControl(r, false)
-	if userID == nil {
+	thID := accessControl(r)
+	if thID == nil {
 		return NotFound(w)
 	}
 
@@ -91,28 +91,28 @@ func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}
 		})
 	}
 
-	// Look up user value and patch it.
-	user, err := s.db.UserByID(*userID)
+	// Look up therapist value and patch it.
+	th, err := s.db.TherapistByID(*thID)
 	if err != nil {
 		return nil, err
 	}
-	image, err := s.db.ImageByUserID(*userID)
+	image, err := s.db.ImageByTherapistID(*thID)
 	if err != nil {
 		return nil, err
 	}
-	imagePatch, err := user.Patch(body)
+	imagePatch, err := th.Patch(body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, nil
 	}
-	if err = s.db.UpdateUser(user); err != nil {
+	if err = s.db.UpdateTherapist(th); err != nil {
 		return nil, err
 	}
 
 	// Deal with image patches.
 	if imagePatch != nil {
 		if image == nil {
-			newImage := model.Image{UserID: *userID}
+			newImage := model.Image{TherapistID: *thID}
 			image = &newImage
 		}
 		image.Extension = imagePatch.Extension
@@ -122,5 +122,5 @@ func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}
 		}
 	}
 
-	return model.UserFullProfileFromUser(user, image), nil
+	return model.TherapistFullProfileFromTherapist(th, image), nil
 }

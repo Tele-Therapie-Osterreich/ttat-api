@@ -10,9 +10,9 @@ import (
 )
 
 // ImageByID looks up an image by its ID.
-func (pg *PGClient) ImageByID(id int) (*model.Image, error) {
+func (pg *PGClient) ImageByID(imgID int) (*model.Image, error) {
 	image := &model.Image{}
-	err := pg.DB.Get(image, imageByID, id)
+	err := pg.DB.Get(image, imageByID, imgID)
 	if err == sql.ErrNoRows {
 		return nil, ErrImageNotFound
 	}
@@ -23,14 +23,14 @@ func (pg *PGClient) ImageByID(id int) (*model.Image, error) {
 }
 
 const imageByID = `
-SELECT id, user_id, extension, data
+SELECT id, therapist_id, extension, data
   FROM images
  WHERE id = $1`
 
-// ImageByUserID looks up a user's image by their user ID.
-func (pg *PGClient) ImageByUserID(id int) (*model.Image, error) {
+// ImageByTherapistID looks up a therapist's image by their therapist ID.
+func (pg *PGClient) ImageByTherapistID(thID int) (*model.Image, error) {
 	image := &model.Image{}
-	err := pg.DB.Get(image, imageByUserID, id)
+	err := pg.DB.Get(image, imageByTherapistID, thID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -40,12 +40,12 @@ func (pg *PGClient) ImageByUserID(id int) (*model.Image, error) {
 	return image, nil
 }
 
-const imageByUserID = `
-SELECT id, user_id, extension, data
+const imageByTherapistID = `
+SELECT id, therapist_id, extension, data
   FROM images
- WHERE user_id = $1`
+ WHERE therapist_id = $1`
 
-// UpsertImage inserts or updates a user image.
+// UpsertImage inserts or updates a therapist image.
 func (pg *PGClient) UpsertImage(image *model.Image) (*model.Image, error) {
 	tx, err := pg.DB.Beginx()
 	if err != nil {
@@ -60,7 +60,7 @@ func (pg *PGClient) UpsertImage(image *model.Image) (*model.Image, error) {
 		}
 	}()
 
-	_, err = pg.UserByID(image.UserID)
+	_, err = pg.TherapistByID(image.TherapistID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func (pg *PGClient) UpsertImage(image *model.Image) (*model.Image, error) {
 }
 
 const insertImage = `
-INSERT INTO images (user_id, extension, data)
-             VALUES (:user_id, :extension, :data)
+INSERT INTO images (therapist_id, extension, data)
+            VALUES (:therapist_id, :extension, :data)
 RETURNING id`
 
 const deleteImage = `DELETE FROM images WHERE id = $1`

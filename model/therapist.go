@@ -10,10 +10,10 @@ import (
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model/types"
 )
 
-// User is the database model for therapists, i.e. the main users of
-// the app.
-type User struct {
-	// Unique ID of the therapist user.
+// Therapist is the database model for therapists who are registered
+// with the site.
+type Therapist struct {
+	// Unique ID of the therapist.
 	ID int `db:"id"`
 
 	// Email address used by therapist to log in to account.
@@ -56,8 +56,9 @@ type User struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
-// Patch applies a patch represented as a JSON object to a user value.
-func (u *User) Patch(patch []byte) (*ImagePatch, error) {
+// Patch applies a patch represented as a JSON object to a therapist
+// value.
+func (u *Therapist) Patch(patch []byte) (*ImagePatch, error) {
 	updates := map[string]interface{}{}
 	err := json.Unmarshal(patch, &updates)
 	if err != nil {
@@ -71,7 +72,7 @@ func (u *User) Patch(patch []byte) (*ImagePatch, error) {
 	}
 	for fld, label := range roFields {
 		if _, ok := updates[fld]; ok {
-			return nil, errors.New("can't patch user " + label)
+			return nil, errors.New("can't patch therapist " + label)
 		}
 	}
 	if err := optStringUpdate(updates, "name", &u.Name); err != nil {
@@ -99,6 +100,7 @@ func (u *User) Patch(patch []byte) (*ImagePatch, error) {
 		return nil, err
 	}
 
+	// TODO: DEAL WITH LANGUAGES
 	// TODO: DEAL WITH SUB-SPECIALITY LIST.
 
 	return DecodeImagePatch(updates, "photo")

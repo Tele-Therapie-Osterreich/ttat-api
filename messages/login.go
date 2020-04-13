@@ -17,6 +17,6 @@ type LoginRequest struct {
 // LoginResponse is a message structure for successful login
 // responses.
 type LoginResponse struct {
-	UserProfile *model.UserFullProfile `json:"user_profile"`
-	NewUser     bool                   `json:"new_user"`
+	Profile      *model.TherapistFullProfile `json:"profile"`
+	NewTherapist bool                        `json:"new_therapist"`
 }

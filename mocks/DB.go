@@ -59,20 +59,20 @@ func (_m *DB) CreateLoginToken(email string, language string) (string, error) {
 	return r0, r1
 }
 
-// CreateSession provides a mock function with given fields: userID
-func (_m *DB) CreateSession(userID int) (string, error) {
-	ret := _m.Called(userID)
+// CreateSession provides a mock function with given fields: thID
+func (_m *DB) CreateSession(thID int) (string, error) {
+	ret := _m.Called(thID)
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func(int) string); ok {
-		r0 = rf(userID)
+		r0 = rf(thID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(userID)
+		r1 = rf(thID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -80,13 +80,13 @@ func (_m *DB) CreateSession(userID int) (string, error) {
 	return r0, r1
 }
 
-// DeleteSessions provides a mock function with given fields: userID
-func (_m *DB) DeleteSessions(userID int) error {
-	ret := _m.Called(userID)
+// DeleteSessions provides a mock function with given fields: thID
+func (_m *DB) DeleteSessions(thID int) error {
+	ret := _m.Called(thID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int) error); ok {
-		r0 = rf(userID)
+		r0 = rf(thID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -94,13 +94,13 @@ func (_m *DB) DeleteSessions(userID int) error {
 	return r0
 }
 
-// DeleteUser provides a mock function with given fields: id
-func (_m *DB) DeleteUser(id int) error {
-	ret := _m.Called(id)
+// DeleteTherapist provides a mock function with given fields: thID
+func (_m *DB) DeleteTherapist(thID int) error {
+	ret := _m.Called(thID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int) error); ok {
-		r0 = rf(id)
+		r0 = rf(thID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -108,13 +108,13 @@ func (_m *DB) DeleteUser(id int) error {
 	return r0
 }
 
-// ImageByID provides a mock function with given fields: id
-func (_m *DB) ImageByID(id int) (*model.Image, error) {
-	ret := _m.Called(id)
+// ImageByID provides a mock function with given fields: imgID
+func (_m *DB) ImageByID(imgID int) (*model.Image, error) {
+	ret := _m.Called(imgID)
 
 	var r0 *model.Image
 	if rf, ok := ret.Get(0).(func(int) *model.Image); ok {
-		r0 = rf(id)
+		r0 = rf(imgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.Image)
@@ -123,7 +123,7 @@ func (_m *DB) ImageByID(id int) (*model.Image, error) {
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(id)
+		r1 = rf(imgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -131,13 +131,13 @@ func (_m *DB) ImageByID(id int) (*model.Image, error) {
 	return r0, r1
 }
 
-// ImageByUserID provides a mock function with given fields: id
-func (_m *DB) ImageByUserID(id int) (*model.Image, error) {
-	ret := _m.Called(id)
+// ImageByTherapistID provides a mock function with given fields: thID
+func (_m *DB) ImageByTherapistID(thID int) (*model.Image, error) {
+	ret := _m.Called(thID)
 
 	var r0 *model.Image
 	if rf, ok := ret.Get(0).(func(int) *model.Image); ok {
-		r0 = rf(id)
+		r0 = rf(thID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.Image)
@@ -146,7 +146,7 @@ func (_m *DB) ImageByUserID(id int) (*model.Image, error) {
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(id)
+		r1 = rf(thID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -154,16 +154,16 @@ func (_m *DB) ImageByUserID(id int) (*model.Image, error) {
 	return r0, r1
 }
 
-// LoginUser provides a mock function with given fields: email
-func (_m *DB) LoginUser(email string) (*model.User, *model.Image, bool, error) {
+// Login provides a mock function with given fields: email
+func (_m *DB) Login(email string) (*model.Therapist, *model.Image, bool, error) {
 	ret := _m.Called(email)
 
-	var r0 *model.User
-	if rf, ok := ret.Get(0).(func(string) *model.User); ok {
+	var r0 *model.Therapist
+	if rf, ok := ret.Get(0).(func(string) *model.Therapist); ok {
 		r0 = rf(email)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*model.Therapist)
 		}
 	}
 
@@ -216,12 +216,35 @@ func (_m *DB) LookupSession(token string) (*int, error) {
 	return r0, r1
 }
 
-// UpdateUser provides a mock function with given fields: therapist
-func (_m *DB) UpdateUser(therapist *model.User) error {
+// TherapistByID provides a mock function with given fields: thID
+func (_m *DB) TherapistByID(thID int) (*model.Therapist, error) {
+	ret := _m.Called(thID)
+
+	var r0 *model.Therapist
+	if rf, ok := ret.Get(0).(func(int) *model.Therapist); ok {
+		r0 = rf(thID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Therapist)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(thID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateTherapist provides a mock function with given fields: therapist
+func (_m *DB) UpdateTherapist(therapist *model.Therapist) error {
 	ret := _m.Called(therapist)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.User) error); ok {
+	if rf, ok := ret.Get(0).(func(*model.Therapist) error); ok {
 		r0 = rf(therapist)
 	} else {
 		r0 = ret.Error(0)
@@ -246,29 +269,6 @@ func (_m *DB) UpsertImage(image *model.Image) (*model.Image, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*model.Image) error); ok {
 		r1 = rf(image)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// UserByID provides a mock function with given fields: id
-func (_m *DB) UserByID(id int) (*model.User, error) {
-	ret := _m.Called(id)
-
-	var r0 *model.User
-	if rf, ok := ret.Get(0).(func(int) *model.User); ok {
-		r0 = rf(id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(id)
 	} else {
 		r1 = ret.Error(1)
 	}

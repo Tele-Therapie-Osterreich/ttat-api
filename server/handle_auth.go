@@ -72,14 +72,14 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) (interface{}, err
 	}
 
 	// Perform login processing.
-	user, avatar, new, err := s.db.LoginUser(email)
+	th, avatar, new, err := s.db.Login(email)
 	if err != nil {
 		return nil, errors.Wrap(err, "performing login processing")
 	}
 
 	// Create a session for the user (or reconnect to an existing
 	// session).
-	token, err := s.db.CreateSession(user.ID)
+	token, err := s.db.CreateSession(th.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) (interface{}, err
 
 	// Return user response for marshalling.
 	resp := messages.LoginResponse{
-		UserProfile: model.UserFullProfileFromUser(user, avatar),
-		NewUser:     new,
+		Profile:      model.TherapistFullProfileFromTherapist(th, avatar),
+		NewTherapist: new,
 	}
 	return &resp, nil
 }
