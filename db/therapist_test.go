@@ -37,30 +37,6 @@ func TestTherapistRetrieval(t *testing.T) {
 	})
 }
 
-func TestLoginTherapist(t *testing.T) {
-	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
-		LoadDefaultFixture(pg, t)
-
-		var tests = []struct {
-			email  string
-			userID int
-			new    bool
-		}{
-			{"test1@example.com", 1, false},
-			{"newuser@example.com", -1, true},
-		}
-		for _, test := range tests {
-			// TODO: DEAL WITH IMAGES HERE
-			th, _, newTh, err := pg.Login(test.email)
-			assert.Nil(t, err)
-			assert.Equal(t, newTh, test.new, "new therapist mismatch")
-			if test.email != "" {
-				assert.Equal(t, th.Email, test.email, "email mismatch")
-			}
-		}
-	})
-}
-
 // func TestUpdateTherapist(t *testing.T) {
 // 	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
 // 		loadDefaultFixture(pg, t)
@@ -87,28 +63,28 @@ func TestLoginTherapist(t *testing.T) {
 // 	})
 // }
 
-// func TestDeleteTherapist(t *testing.T) {
-// 	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
-// 		loadDefaultFixture(pg, t)
+func TestDeleteTherapist(t *testing.T) {
+	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
+		LoadDefaultFixture(pg, t)
 
-// 		var tests = []struct {
-// 			id  string
-// 			err error
-// 		}{
-// 			{"usr_TESTUSER1", nil},
-// 			{"usr_UNKNOWN", ErrTherapistNotFound},
-// 		}
-// 		for _, test := range tests {
-// 			err := pg.DeleteTherapist(test.id)
-// 			assert.Equal(t, err, test.err)
-// 			if err != nil {
-// 				continue
-// 			}
-// 			_, err = pg.TherapistByID(test.id)
-// 			assert.Equal(t, err, ErrTherapistNotFound, "therapist not deleted")
-// 		}
-// 	})
-// }
+		var tests = []struct {
+			id  int
+			err error
+		}{
+			{1, nil},
+			{123, ErrTherapistNotFound},
+		}
+		for _, test := range tests {
+			err := pg.DeleteTherapist(test.id)
+			assert.Equal(t, err, test.err)
+			if err != nil {
+				continue
+			}
+			_, err = pg.TherapistByID(test.id)
+			assert.Equal(t, err, ErrTherapistNotFound, "therapist not deleted")
+		}
+	})
+}
 
 // func TestListUsers(t *testing.T) {
 // 	RunWithSchema(t, func(pg *PGClient, t *testing.T) {
