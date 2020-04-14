@@ -92,6 +92,14 @@ func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}
 	}
 
 	// Look up therapist value and patch it.
+
+	edits, err := s.db.AddPendingEdits(*thID, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: SHOULD BE GETTING THE THERAPIST DATA WITH ANY EXISTING
+	// PATCHES APPLIED HERE.
 	th, err := s.db.TherapistByID(*thID)
 	if err != nil {
 		return nil, err
@@ -105,9 +113,9 @@ func (s *Server) selfUpdate(w http.ResponseWriter, r *http.Request) (interface{}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, nil
 	}
-	if err = s.db.UpdateTherapist(th); err != nil {
-		return nil, err
-	}
+	// if err = s.db.UpdateTherapist(th); err != nil {
+	// 	return nil, err
+	// }
 
 	// Deal with image patches.
 	if imagePatch != nil {

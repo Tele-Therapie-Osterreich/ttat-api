@@ -3,6 +3,7 @@
 package db
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,15 +18,15 @@ func TestLoginTherapist(t *testing.T) {
 		LoadDefaultFixture(pg, t)
 
 		var tests = []struct {
-			email  string
-			userID int
-			new    bool
+			email string
+			new   bool
 		}{
-			{"test1@example.com", 1, false},
-			{"newuser@example.com", -1, true},
+			{"test1@example.com", false},
+			{"newuser@example.com", true},
 		}
 		for _, test := range tests {
 			// TODO: DEAL WITH IMAGES HERE
+			fmt.Println("TestLoginTherapist: email =", test.email, "  new =", test.new)
 			th, _, newTh, err := pg.Login(test.email)
 			assert.Nil(t, err)
 			assert.Equal(t, newTh, test.new, "new therapist mismatch")

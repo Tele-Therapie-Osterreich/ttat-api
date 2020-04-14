@@ -3,6 +3,7 @@
 package db
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,7 @@ func TestTherapistRetrieval(t *testing.T) {
 			{123, ErrTherapistNotFound, ""},
 		}
 		for _, test := range tests {
+			fmt.Println("TestTherapistRetrieval: id =", test.id, "  email =", test.email)
 			th, err := pg.TherapistByID(test.id)
 			assert.Equal(t, err, test.err)
 			if err != nil {
@@ -77,6 +79,7 @@ func TestDeleteTherapist(t *testing.T) {
 			{123, ErrTherapistNotFound},
 		}
 		for _, test := range tests {
+			fmt.Println("TestDeleteTherapist: id =", test.id)
 			err := pg.DeleteTherapist(test.id)
 			assert.Equal(t, err, test.err)
 			if err != nil {

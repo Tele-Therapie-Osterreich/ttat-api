@@ -10,6 +10,29 @@ type DB struct {
 	mock.Mock
 }
 
+// AddPendingEdits provides a mock function with given fields: thID, patch
+func (_m *DB) AddPendingEdits(thID int, patch []byte) (*model.PendingEdits, error) {
+	ret := _m.Called(thID, patch)
+
+	var r0 *model.PendingEdits
+	if rf, ok := ret.Get(0).(func(int, []byte) *model.PendingEdits); ok {
+		r0 = rf(thID, patch)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.PendingEdits)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int, []byte) error); ok {
+		r1 = rf(thID, patch)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CheckLoginToken provides a mock function with given fields: token
 func (_m *DB) CheckLoginToken(token string) (string, string, error) {
 	ret := _m.Called(token)
@@ -209,6 +232,29 @@ func (_m *DB) LookupSession(token string) (*int, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(token)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PendingEditsByTherapistID provides a mock function with given fields: thID
+func (_m *DB) PendingEditsByTherapistID(thID int) (*model.PendingEdits, error) {
+	ret := _m.Called(thID)
+
+	var r0 *model.PendingEdits
+	if rf, ok := ret.Get(0).(func(int) *model.PendingEdits); ok {
+		r0 = rf(thID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.PendingEdits)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(thID)
 	} else {
 		r1 = ret.Error(1)
 	}

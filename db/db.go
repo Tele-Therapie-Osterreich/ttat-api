@@ -95,6 +95,19 @@ type DB interface {
 
 	// ----------------------------------------------------------------------
 	//
+	// PENDING EDITS
+
+	// PendingEditsByTherapistID retrieves any pending edits for a
+	// therapist.
+	PendingEditsByTherapistID(thID int) (*model.PendingEdits, error)
+
+	// AddPendingEdits adds some pending edits for a therapist, merging
+	// with any existing pending edits for the therapist, and updating
+	// the therapist's approval state.
+	AddPendingEdits(thID int, patch []byte) (*model.PendingEdits, error)
+
+	// ----------------------------------------------------------------------
+	//
 	// IMAGES
 
 	// Retrieve image.
