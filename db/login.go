@@ -11,12 +11,10 @@ import (
 // If an account with the given email address does not already exist
 // in the database, then create a new user account with the given
 // email address, defaulting all user information fields to empty.
-//
-// Returns the full therapist record of the logged in therapist.
-func (pg *PGClient) Login(email string) (*model.Therapist, *model.Image, bool, error) {
+func (pg *PGClient) Login(email string) (*model.TherapistInfo, bool, error) {
 	tx, err := pg.DB.Beginx()
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	defer func() {
 		switch err {
@@ -27,43 +25,64 @@ func (pg *PGClient) Login(email string) (*model.Therapist, *model.Image, bool, e
 		}
 	}()
 
-	th := &model.Therapist{}
-	err = tx.Get(th, therapistByEmail, email)
+	// TODO: DEAL WITH THERAPIST IMAGES
+	info, err := therapistInfoByEmail(tx, email)
 	if err == nil {
-		image, err := pg.ImageByTherapistID(th.ID)
-		if err != ErrImageNotFound && err != nil {
-			return nil, nil, false, err
-		}
-		return th, image, false, nil
+		return info, false, nil
+	}
+	if err != nil && err != ErrTherapistNotFound {
+		return nil, false, err
 	}
 
-	th = &model.Therapist{
+	th := &model.Therapist{
 		Email: email,
 	}
-	rows, err := tx.NamedQuery(createTherapist, th)
+	rows, err := tx.NamedQuery(qCreateTherapist, th)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return nil, nil, false, sql.ErrNoRows
+		return nil, false, sql.ErrNoRows
 	}
-
 	err = rows.Scan(&th.ID)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
+	}
+	rows.Close()
+
+	p := &model.TherapistProfile{
+		TherapistID: th.ID,
+		Public:      false,
+	}
+	rows2, err := tx.NamedQuery(qCreateTherapistProfile, p)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows2.Close()
+	if !rows2.Next() {
+		return nil, false, sql.ErrNoRows
+	}
+	err = rows2.Scan(&p.ID)
+	if err != nil {
+		return nil, false, err
 	}
 
-	return th, nil, true, nil
+	return &model.TherapistInfo{
+		Base:              th,
+		Profile:           p,
+		Image:             nil,
+		HasPublicProfile:  false,
+		HasPendingProfile: true,
+	}, true, nil
 }
 
-const therapistByEmail = `
-SELECT id, email, type, name,
-       street_address, city, postcode, country,
-       phone, languages, short_profile, full_profile,
-       status, created_at
-  FROM therapists
- WHERE email = $1`
-
-const createTherapist = `
+const qCreateTherapist = `
 INSERT INTO therapists (email) VALUES (:email) RETURNING id`
+
+const qCreateTherapistProfile = `
+INSERT INTO profiles
+  (therapist_id, public)
+VALUES
+  (:therapist_id, :public)
+RETURNING id`

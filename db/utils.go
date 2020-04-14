@@ -1,6 +1,8 @@
 package db
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Paginate does the API-wide processing of pagination controls:
 // maximum limit is 100, default limit is 30, default offset is zero.

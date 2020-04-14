@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Tele-Therapie-Osterreich/ttat-api/db"
 	"github.com/go-chi/chi"
 )
 
@@ -41,7 +42,10 @@ func (s *Server) routes(devMode bool, csrfSecret string,
 
 // Routes for viewing and manipulating user data.
 func (s *Server) selfRoutes(r chi.Router) {
-	r.Get("/", SimpleHandler(s.selfDetail))
-	r.Patch("/", SimpleHandler(s.selfUpdate))
+	// TODO: DECIDE EXACTLY HOW THIS SHOULD WORK
+	r.Get("/", SimpleHandler(s.selfDetail(db.PreferPublic)))
+	r.Get("/public", SimpleHandler(s.selfDetail(db.PublicOnly)))
+	r.Get("/pending", SimpleHandler(s.selfDetail(db.PendingOnly)))
+	// r.Patch("/", SimpleHandler(s.selfUpdate))
 	r.Delete("/", SimpleHandler(s.selfDelete))
 }

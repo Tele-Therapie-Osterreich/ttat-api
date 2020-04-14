@@ -90,11 +90,23 @@ func TestLogin(t *testing.T) {
 	d, m, r := mockServer()
 
 	d.On("CheckLoginToken", TestToken).Return(TestEmail, "en", nil)
-	u := model.Therapist{
+	th := &model.Therapist{
 		ID:    TestTherapistID,
 		Email: TestEmail,
 	}
-	d.On("Login", TestEmail).Return(&u, nil, true, nil)
+	p := &model.TherapistProfile{
+		ID:          1,
+		TherapistID: TestTherapistID,
+		Public:      false,
+	}
+	i := model.TherapistInfo{
+		Base:              th,
+		Profile:           p,
+		Image:             nil,
+		HasPublicProfile:  false,
+		HasPendingProfile: true,
+	}
+	d.On("Login", TestEmail).Return(&i, true, nil)
 	d.On("CreateSession", TestTherapistID).Return(TestSession, nil)
 
 	rr := apiTest(t, r, "POST", "/auth/login",

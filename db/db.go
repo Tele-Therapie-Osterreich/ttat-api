@@ -33,6 +33,17 @@ var ErrImageNotFound = errors.New("therapist image ID not found")
 // time).
 var ErrReadOnlyField = errors.New("attempt to modify read-only field")
 
+// ProfileSelection is an enumerated type used to determine which
+// profile (public or pending) is returned from queries.
+type ProfileSelection uint
+
+// Enumeration values for ProfileSelection.
+const (
+	PublicOnly ProfileSelection = iota
+	PendingOnly
+	PreferPublic
+)
+
 // DB describes the database operations.
 type DB interface {
 	// ----------------------------------------------------------------------
@@ -41,12 +52,15 @@ type DB interface {
 
 	// Login performs login actions for a given email address:
 	//
-	// If an account with the given email address does not already exist
-	// in the database, then create a new user account with the given
-	// email address, defaulting all user information fields to empty.
+	//  - If an account with the given email address does not already
+	//    exist in the database, then create a new user account with the
+	//    given email address. Also create a new non-public therapist
+	//    profile, defaulting all user information fields to empty.
 	//
-	// Returns the full therapist record of the logged in therapist.
-	Login(email string) (*model.Therapist, *model.Image, bool, error)
+	//  - If an account with the give email address does exist, return
+	//    the therapist's public profile if they have one and their
+	//    pending one if not.
+	Login(email string) (*model.TherapistInfo, bool, error)
 
 	// ----------------------------------------------------------------------
 	//
@@ -81,30 +95,55 @@ type DB interface {
 	//
 	// THERAPISTS
 
-	// TherapistByID returns the full therapist model for a given
-	// therapist ID.
+	// TherapistByID returns the therapist model for a given therapist
+	// ID.
 	TherapistByID(thID int) (*model.Therapist, error)
 
-	// UpdateTherapist updates the therapist's details in the database.
-	// The id, email, status and created_at fields are read-only using
-	// this method.
-	UpdateTherapist(therapist *model.Therapist) error
+	// TherapistInfoByID returns full therapist information for a given
+	// therapist ID.
+	TherapistInfoByID(thID int, profile ProfileSelection) (*model.TherapistInfo, error)
+
+	// TherapistInfoByEmail returns full therapist information for a
+	// given therapist email address, preferentially returning any
+	// public profile.
+	TherapistInfoByEmail(email string) (*model.TherapistInfo, error)
+
+	// TODO: ALLOW UPDATES TO THERAPIST EMAIL ADDRESS? EVERYTHING ELSE
+	// GOES THROUGH PROFILE EDITS...
 
 	// DeleteTherapist deletes the given therapist account.
+	// TODO: CHECK DELETION OF ASSOCIATED DATA -- EVERYTHING LINKED TO
+	// IDs IN therapists TABLE SHOULD HAVE "ON DELETE CASCADE".
 	DeleteTherapist(thID int) error
 
 	// ----------------------------------------------------------------------
 	//
-	// PENDING EDITS
+	// THERAPIST PROFILES
 
-	// PendingEditsByTherapistID retrieves any pending edits for a
-	// therapist.
-	PendingEditsByTherapistID(thID int) (*model.PendingEdits, error)
+	// TherapistProfileByTherapistID retrieves the public or pending
+	// profile of a given therapist.
+	TherapistProfileByTherapistID(thID int, public bool) (*model.TherapistProfile, error)
 
-	// AddPendingEdits adds some pending edits for a therapist, merging
-	// with any existing pending edits for the therapist, and updating
-	// the therapist's approval state.
-	AddPendingEdits(thID int, patch []byte) (*model.PendingEdits, error)
+	// UpdateTherapistProfile performs profile updating for a therapist.
+	// If the therapist already has a pending profile, the update
+	// profile replaces the pending profile. If the therapist does not
+	// have a pending profile, a new one is generated from the profile
+	// passed in.
+	UpdateTherapistProfile(thID int, patch []byte) (*model.ImagePatch, error)
+
+	// AbandonTherapistEdits deletes any pending edits profile
+	// associated with an active therapist.
+	AbandonTherapistEdits(thID int) error
+
+	// ----------------------------------------------------------------------
+	//
+	// SEARCH
+
+	// TherapistSearch performs the "matchmaker" searching, filtering
+	// public therapist profiles by therapist type and a list of
+	// specialities. Results are returned as views suitable for display
+	// in a summary list.
+	//TherapistSearch(t types.TherapistType, specialities []string) ([]*model.TherapistSummaryView, error)
 
 	// ----------------------------------------------------------------------
 	//
@@ -113,8 +152,8 @@ type DB interface {
 	// Retrieve image.
 	ImageByID(imgID int) (*model.Image, error)
 
-	// Retrieve therapist image.
-	ImageByTherapistID(thID int) (*model.Image, error)
+	// Retrieve therapist profile image.
+	ImageByProfileID(prID int) (*model.Image, error)
 
 	// Insert or update image.
 	UpsertImage(image *model.Image) (*model.Image, error)

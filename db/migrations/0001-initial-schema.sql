@@ -15,22 +15,56 @@
 CREATE TYPE therapist_type AS ENUM ('unknown', 'ergo', 'physio', 'logo');
 
 -- Approval status for therapist accounts.
-CREATE TYPE approval_state AS ENUM ('new', 'approved', 'edits_pending', 'suspended');
+CREATE TYPE approval_state AS ENUM ('new', 'active', 'suspended');
 
--- One record per therapist user. Newly created therapist profiles are
--- not visible in search results until they are approved, which
--- generally requires that a minimal set of information is filled in
--- (to be really minimal, that would just be email, name and therapist
--- type).
+-- One record per therapist user. Most profile information is stored
+-- in the linked profiles table.
+CREATE TABLE therapists (
+  id             SERIAL PRIMARY KEY,
+  email          TEXT UNIQUE NOT NULL,
+  status         approval_state DEFAULT 'new',
+  last_login_at  TIMESTAMPTZ DEFAULT now(),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Profiles for therapists: one or two records per therapist user (a
+-- maximum of one public and one pending).
+--
+-- Newly created therapist profiles are not visible in search results
+-- until they are approved, which generally requires that a minimal
+-- set of information is filled in (to be really minimal, that would
+-- just be email, name and therapist type). Also, subsequent profile
+-- edits are not made public until approved by an administrator.
+--
+-- The mechanism for handling this is to keep parallel public and
+-- pending profiles (distinguished by the boolean public column). The
+-- following possible states can exist (T = therapists, P = profiles):
+--
+-- T.status   P.public  Comment
+--
+-- new        F         Profiles of new users are not visible until
+--                      approved.
+--
+-- active     T         Active user with on pending edits.
+-- active     T+F       Active user with pending edits (only public
+--                      profile is visible to other non-admin users).
+--
+-- suspended  F         Users suspended by an administrator do not
+--                      appear in public profile listings.
 --
 -- The administrative interface shows new profiles as "pending
 -- approval" once the minimal set of data is included.
 --
+-- Any user edits to their profile are applied to the non-public
+-- (pending) profile version, creating a new pending profile if none
+-- already exists for the user.
+--
 -- TODO: ADD KK CONTRACT STATUS
 -- TODO: ADD LAT/LON LOCATION DATA, GEOCODED AT SETUP TIME?
-CREATE TABLE therapists (
+CREATE TABLE profiles (
   id               SERIAL PRIMARY KEY,
-  email            TEXT UNIQUE NOT NULL,
+  therapist_id     INTEGER NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
+  public           BOOLEAN,
   type             therapist_type NOT NULL DEFAULT 'unknown',
   name             TEXT,
   street_address   TEXT,
@@ -42,32 +76,18 @@ CREATE TABLE therapists (
   languages        TEXT[],
   short_profile    TEXT,
   full_profile     TEXT,
-  status           approval_state DEFAULT 'new',
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+  edited_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
 
--- When a therapist edits their profile, those edits are not
--- immediately reflected in the public view of their profile. Instead
--- the edits are held in a row of this table as a JSON-based
--- field-level patch between the public view and the newly edited
--- version of the profile. When the edits are approved by an
--- administrator, the patch is folded into the profile in the main
--- therapists table. Any extra edits before approval are folded into
--- the patch in this table so that edits can be approved all at once.
-CREATE TABLE therapist_pending_edits (
-  id            SERIAL PRIMARY KEY,
-  therapist_id  INTEGER UNIQUE NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
-  patch         JSONB,
-  edited_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  UNIQUE (therapist_id, public)
 );
 
 -- Auxiliary table storing therapist profile images.
 -- TODO: CHANGE THIS TO USE AN EXTERNAL IMAGE MANAGEMENT SERVICE
 CREATE TABLE images (
-  id            SERIAL PRIMARY KEY,
-  therapist_id  INTEGER UNIQUE NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
-  extension     TEXT NOT NULL,
-  data          BYTEA
+  id          SERIAL PRIMARY KEY,
+  profile_id  INTEGER UNIQUE NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  extension   TEXT NOT NULL,
+  data        BYTEA
 );
 
 -- -- SELECT id, email, name,
@@ -89,10 +109,10 @@ CREATE TABLE specialities (
   UNIQUE(type, label)
 );
 
--- Join table for therapist therapist/speciality many-to-many relation.
+-- Join table for therapist profile/speciality many-to-many relation.
 CREATE TABLE therapist_specialities (
   id             SERIAL PRIMARY KEY,
-  therapist_id   INTEGER REFERENCES therapists(id) ON DELETE CASCADE,
+  profile_id     INTEGER REFERENCES profiles(id) ON DELETE CASCADE,
   speciality_id  INTEGER REFERENCES specialities(id) ON DELETE CASCADE,
   index          INTEGER NOT NULL
 );
@@ -141,8 +161,8 @@ DROP TABLE sessions;
 DROP TABLE login_tokens;
 DROP TABLE therapist_specialities;
 DROP TABLE specialities;
-DROP TABLE therapist_pending_edits;
 DROP TABLE images;
+DROP TABLE profiles;
 DROP TABLE therapists;
 DROP TYPE approval_state;
 DROP TYPE therapist_type;

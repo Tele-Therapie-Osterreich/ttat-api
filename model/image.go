@@ -15,8 +15,8 @@ type Image struct {
 	// Unique ID of the image.
 	ID int `db:"id"`
 
-	// Unique ID of the therapist the image is associated with.
-	TherapistID int `db:"therapist_id"`
+	// Unique ID of the therapist profile the image is associated with.
+	ProfileID int `db:"profile_id"`
 
 	// File extension for the image ("png" or "jpg").
 	Extension string `db:"extension"`

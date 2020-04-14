@@ -18,6 +18,7 @@ const (
 	TestName           = "Test User"
 	TestToken          = "test-token"
 	TestTherapistID    = 2345
+	TestProfileID      = 6789
 	TestImageID        = 997
 	TestImageExtension = "jpg"
 	TestSession        = "test-session"

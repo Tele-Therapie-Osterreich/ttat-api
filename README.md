@@ -25,8 +25,9 @@
 ### Therapist user profiles
 
 ```
-GET /me  (authenticated only)
-    ?status={public|pending} ("public" is default)
+GET /me         (authenticated only)
+GET /me/public
+GET /me/pending
 ```
 
  * Get profile of logged in user

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/Tele-Therapie-Osterreich/ttat-api/model"
+	"github.com/jmoiron/sqlx"
 
 	// Import Postgres DB driver.
 	_ "github.com/lib/pq"
@@ -12,7 +13,7 @@ import (
 // ImageByID looks up an image by its ID.
 func (pg *PGClient) ImageByID(imgID int) (*model.Image, error) {
 	image := &model.Image{}
-	err := pg.DB.Get(image, imageByID, imgID)
+	err := pg.DB.Get(image, qImageByID, imgID)
 	if err == sql.ErrNoRows {
 		return nil, ErrImageNotFound
 	}
@@ -22,15 +23,19 @@ func (pg *PGClient) ImageByID(imgID int) (*model.Image, error) {
 	return image, nil
 }
 
-const imageByID = `
+const qImageByID = `
 SELECT id, therapist_id, extension, data
   FROM images
  WHERE id = $1`
 
-// ImageByTherapistID looks up a therapist's image by their therapist ID.
-func (pg *PGClient) ImageByTherapistID(thID int) (*model.Image, error) {
+// ImageByProfileID looks up a therapist's image by their therapist ID.
+func (pg *PGClient) ImageByProfileID(prID int) (*model.Image, error) {
+	return imageByProfileID(pg.DB, prID)
+}
+
+func imageByProfileID(q sqlx.Queryer, prID int) (*model.Image, error) {
 	image := &model.Image{}
-	err := pg.DB.Get(image, imageByTherapistID, thID)
+	err := sqlx.Get(q, image, qImageByProfileID, prID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -40,10 +45,10 @@ func (pg *PGClient) ImageByTherapistID(thID int) (*model.Image, error) {
 	return image, nil
 }
 
-const imageByTherapistID = `
-SELECT id, therapist_id, extension, data
+const qImageByProfileID = `
+SELECT id, profile_id, extension, data
   FROM images
- WHERE therapist_id = $1`
+ WHERE profile_id = $1`
 
 // UpsertImage inserts or updates a therapist image.
 func (pg *PGClient) UpsertImage(image *model.Image) (*model.Image, error) {
@@ -60,46 +65,48 @@ func (pg *PGClient) UpsertImage(image *model.Image) (*model.Image, error) {
 		}
 	}()
 
-	_, err = pg.TherapistByID(image.TherapistID)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: THIS IS WRONG FOR WIPPY REASONS. FIX IT!
+	// _, err = pg.TherapistByID(image.ProfileID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	oldID := image.ID
-	if oldID != 0 {
-		result, err := tx.Exec(deleteImage, oldID)
-		if err != nil {
-			return nil, err
-		}
-		rows, err := result.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		if rows != 1 {
-			return nil, ErrImageNotFound
-		}
-	}
+	// oldID := image.ID
+	// if oldID != 0 {
+	// 	result, err := tx.Exec(qDeleteImage, oldID)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	rows, err := result.RowsAffected()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if rows != 1 {
+	// 		return nil, ErrImageNotFound
+	// 	}
+	// }
 
-	rows, err := tx.NamedQuery(insertImage, image)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	if !rows.Next() {
-		return nil, sql.ErrNoRows
-	}
+	// rows, err := tx.NamedQuery(qInsertImage, image)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer rows.Close()
+	// if !rows.Next() {
+	// 	return nil, sql.ErrNoRows
+	// }
 
-	err = rows.Scan(&image.ID)
-	if err != nil {
-		return nil, err
-	}
+	// err = rows.Scan(&image.ID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return image, nil
+	// return image, nil
+	return nil, nil
 }
 
-const insertImage = `
-INSERT INTO images (therapist_id, extension, data)
-            VALUES (:therapist_id, :extension, :data)
+const qInsertImage = `
+INSERT INTO images (profile_id, extension, data)
+            VALUES (:profile_id, :extension, :data)
 RETURNING id`
 
-const deleteImage = `DELETE FROM images WHERE id = $1`
+const qDeleteImage = `DELETE FROM images WHERE id = $1`

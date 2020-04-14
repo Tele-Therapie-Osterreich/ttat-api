@@ -8,8 +8,7 @@ import (
 )
 
 // ApprovalState is an enumerated type representing the current status
-// of a therapist account. Accounts can be: new, approved, edits
-// pending or suspended.
+// of a therapist account. Accounts can be: new, active or suspended.
 type ApprovalState uint
 
 const (
@@ -18,14 +17,11 @@ const (
 	// by an administrator.
 	New = iota
 
-	// Approved represents a therapist account that has been approved
-	// for release by an administrator, and is now visible to all users.
-	Approved
-
-	// EditsPending represents a therapist account that is otherwise
-	// approved, but that has edits pending that need to be approved
-	// before they are released to general visibility.
-	EditsPending
+	// Active represents a therapist account that has been approved for
+	// release by an administrator, and is now visible to all users. The
+	// account may have both a public profile and a profile representing
+	// pending edits.
+	Active
 
 	// Suspended represents a therapist account that an administrator
 	// suspended for some reason, so that it is not visible to any users
@@ -38,10 +34,8 @@ func (a ApprovalState) String() string {
 	switch a {
 	case New:
 		return "new"
-	case Approved:
-		return "approved"
-	case EditsPending:
-		return "edits_pending"
+	case Active:
+		return "active"
 	case Suspended:
 		return "suspended"
 	default:
@@ -55,10 +49,8 @@ func (a *ApprovalState) FromString(s string) error {
 	switch s {
 	case "new":
 		*a = New
-	case "approved":
-		*a = Approved
-	case "edits_pending":
-		*a = EditsPending
+	case "active":
+		*a = Active
 	case "suspended":
 		*a = Suspended
 	default:
