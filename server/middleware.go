@@ -176,7 +176,7 @@ type AuthInfo struct {
 	// User ID for the authenticated therapist user making the request
 	// (will be zero for an unauthenticated request or a request from a
 	// patient).
-	UserID int
+	TherapistID int
 }
 
 // ctxKey is a key type for request context information.
@@ -200,17 +200,16 @@ func CredentialCtx(s *Server) func(http.Handler) http.Handler {
 			if cookie, err := r.Cookie("session"); err == nil {
 				session = cookie.Value
 			}
-
 			if session == "" {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			authInfo := AuthInfo{}
-			userID, err := s.db.LookupSession(session)
+			thID, err := s.db.LookupSession(session)
 			if err == nil {
 				authInfo.Authenticated = true
-				authInfo.UserID = *userID
+				authInfo.TherapistID = *thID
 			}
 			next.ServeHTTP(w, r.WithContext(NewAuthContext(r.Context(), &authInfo)))
 		})

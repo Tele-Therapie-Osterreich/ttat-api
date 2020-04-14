@@ -125,7 +125,7 @@ DELETE FROM login_tokens WHERE token = $1 OR expires_at < NOW()`
 
 // CreateSession generates a new session token for a therapist user,
 // or reconnects to an existing session for the requesting user ID.
-func (pg *PGClient) CreateSession(userID int) (string, error) {
+func (pg *PGClient) CreateSession(thID int) (string, error) {
 	// In a transaction...
 	tx, err := pg.DB.Beginx()
 	if err != nil {
@@ -142,7 +142,7 @@ func (pg *PGClient) CreateSession(userID int) (string, error) {
 
 	// Look up existing session.
 	token := ""
-	err = tx.Get(&token, sessionByUser, userID)
+	err = tx.Get(&token, sessionByUser, thID)
 	if err == nil {
 		return token, nil
 	}
@@ -153,7 +153,7 @@ func (pg *PGClient) CreateSession(userID int) (string, error) {
 	// Create new session.
 	id := NewID(16)
 
-	_, err = tx.Exec(`INSERT INTO sessions VALUES ($1, $2)`, id, userID)
+	_, err = tx.Exec(`INSERT INTO sessions VALUES ($1, $2)`, id, thID)
 	if err != nil {
 		return "", err
 	}
@@ -162,7 +162,7 @@ func (pg *PGClient) CreateSession(userID int) (string, error) {
 }
 
 const sessionByUser = `
-SELECT token FROM sessions WHERE user_id = $1`
+SELECT token FROM sessions WHERE therapist_id = $1`
 
 // LookupSession checks a session token and returns the associated
 // user ID, email and admin flag if the session is known.
@@ -175,18 +175,18 @@ func (pg *PGClient) LookupSession(token string) (*int, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sess.UserID, nil
+	return sess.TherapistID, nil
 }
 
 const lookupSession = `
-SELECT token, user_id
+SELECT token, therapist_id
   FROM sessions
  WHERE token = $1`
 
 // DeleteSessions deletes all sessions for a user, i.e. logs the user
 // out of all devices where they're logged in.
-func (pg *PGClient) DeleteSessions(userID int) error {
-	_, err := pg.DB.Exec(`DELETE FROM sessions WHERE user_id = $1`, userID)
+func (pg *PGClient) DeleteSessions(thID int) error {
+	_, err := pg.DB.Exec(`DELETE FROM sessions WHERE therapist_id = $1`, thID)
 	if err != nil {
 		return err
 	}

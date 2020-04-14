@@ -44,9 +44,6 @@ func (s *Server) selfDetail(profile db.ProfileSelection) SimpleHandlerFunc {
 		if err != nil {
 			return nil, err
 		}
-		if info.Base.Status != types.Active {
-			return NotFound(w)
-		}
 
 		// TODO: Also need specialities...
 		return model.NewTherapistFullView(info), nil

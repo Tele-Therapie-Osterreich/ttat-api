@@ -129,7 +129,7 @@ CREATE INDEX login_tokens_expired_index ON login_tokens(expires_at);
 
 -- Session IDs for logins.
 CREATE TABLE sessions (
-  token    TEXT PRIMARY KEY,
+  token         TEXT PRIMARY KEY,
   therapist_id  INTEGER REFERENCES therapists(id) ON DELETE CASCADE
 );
 

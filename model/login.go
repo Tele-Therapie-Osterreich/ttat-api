@@ -27,5 +27,5 @@ type Session struct {
 	Token string `db:"token"`
 
 	// ID of a therapist user the session is associated with.
-	UserID *int `db:"user_id"`
+	TherapistID *int `db:"therapist_id"`
 }

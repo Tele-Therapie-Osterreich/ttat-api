@@ -18,6 +18,6 @@ func accessControl(r *http.Request) *int {
 		return nil
 	}
 
-	// Authenticated user: return the user ID.
-	return &authInfo.UserID
+	// Authenticated user: return the therapist user ID.
+	return &authInfo.TherapistID
 }

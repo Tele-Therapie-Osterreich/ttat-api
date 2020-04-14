@@ -111,9 +111,9 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) (interface{}, er
 		return NotFound(w)
 	}
 
-	if authInfo.UserID != 0 {
+	if authInfo.TherapistID != 0 {
 		// Delete all sessions from database for matching user ID.
-		s.db.DeleteSessions(authInfo.UserID)
+		s.db.DeleteSessions(authInfo.TherapistID)
 	}
 
 	s.clearSessionCookie(w)

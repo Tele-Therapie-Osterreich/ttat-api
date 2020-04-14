@@ -12,16 +12,16 @@ type TherapistSummaryView struct {
 	ID            int                 `json:"id"`
 	Email         string              `json:"email"`
 	Type          types.TherapistType `json:"type"`
-	Name          *string             `json:"name"`
-	StreetAddress *string             `json:"street_address",omitempty`
-	City          *string             `json:"city",omitempty`
-	Postcode      *string             `json:"postcode",omitempty`
-	Country       *string             `json:"country",omitempty`
-	Phone         *string             `json:"phone",omitempty`
-	Website       *string             `json:"website",omitempty`
-	Languages     []string            `json:"languages",omitempty`
-	ShortProfile  *string             `json:"short_profile",omitempty`
-	Photo         *string             `json:"photo",omitempty`
+	Name          *string             `json:"name,omitempty"`
+	StreetAddress *string             `json:"street_address,omitempty"`
+	City          *string             `json:"city,omitempty"`
+	Postcode      *string             `json:"postcode,omitempty"`
+	Country       *string             `json:"country,omitempty"`
+	Phone         *string             `json:"phone,omitempty"`
+	Website       *string             `json:"website,omitempty"`
+	Languages     []string            `json:"languages,omitempty"`
+	ShortProfile  *string             `json:"short_profile,omitempty"`
+	Photo         *string             `json:"photo,omitempty"`
 	// TODO: ADD SUB-SPECIALITIES
 }
 
@@ -29,7 +29,7 @@ type TherapistSummaryView struct {
 // therapist.
 type TherapistFullView struct {
 	TherapistSummaryView
-	FullProfile *string `json:"full_profile",omitempty`
+	FullProfile *string `json:"full_profile,omitempty"`
 }
 
 // TherapistLoginView is a JSON view of all the information about a
@@ -41,8 +41,8 @@ type TherapistLoginView struct {
 	LastLoginAt time.Time           `json:"last_login_at"`
 	EditedAt    time.Time           `json:"edited_at"`
 	Public      bool                `json:"public"`
-	HasPublic   *bool               `json:"has_public",omitempty`
-	HasPending  *bool               `json:"has_pending",omitempty`
+	HasPublic   *bool               `json:"has_public,omitempty"`
+	HasPending  *bool               `json:"has_pending,omitempty"`
 }
 
 // Fill fills in a summary profile view from a therapist and their

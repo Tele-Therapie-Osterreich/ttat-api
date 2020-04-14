@@ -28,6 +28,7 @@ func (pg *PGClient) Login(email string) (*model.TherapistInfo, bool, error) {
 	// TODO: DEAL WITH THERAPIST IMAGES
 	info, err := therapistInfoByEmail(tx, email)
 	if err == nil {
+		// TODO: UPDATE last_login_at HERE
 		return info, false, nil
 	}
 	if err != nil && err != ErrTherapistNotFound {
